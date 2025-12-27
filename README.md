@@ -35,16 +35,18 @@ This project implements several standard kernels:
 ## Project Structure
 
 ```
-├── meson.build     # Build configuration
-├── build           # Output directory (created by build)
-├── data            # Output directory
-│   ├── values      # CSV files (time_data.csv)
-│   └── plots       # Generated plots
 ├── images          # Input and output directory for BMP images
 │   ├── base        # Place input BMP files here
 │   └── [kernel]    # Output directories (automatically created)
-├── scripts         # Utility scripts
-└── src             # Source code
+├── benchmark       # C benchmarking code
+│   ├── build       # Output directory (created by build)
+│   ├── meson.build # Build configuration
+│   ├── scripts     # Utility scripts
+│   └── src         # Source code
+├── data            # Output directory
+│   ├── chrono      # CSV files (speedups_data.csv, etc.)
+│   └── plots       # Generated plots
+├── visualization   # Python visualization code
 ```
 
 ## Setup
@@ -184,12 +186,12 @@ uv sync
 To generate performance plots from the speedup data:
 
 ```bash
-uv run plot.py
+uv run main.py --data ../data/chrono/speedups_data.csv --output ../data/plots
 ```
 
 **Arguments:**
-- `--data`: Path to the input CSV file (default: `../data/chronos/speedups_data.csv`)
-- `--output`: Directory to save the plots (default: `plots`)
+- `--data`: Path to the input CSV file (default: `../data/chrono/speedups_data.csv`)
+- `--output`: Directory to save the plots (default: `../data/plots`)
 
 **Available Plots:**
 

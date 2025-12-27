@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Path to the data directory (relative to scripts/)
-DATA_DIR="$SCRIPT_DIR/../data/"
+DATA_DIR="$SCRIPT_DIR/../../data/"
 
 # Safety check: Ensure the data directory exists
 if [ ! -d "$DATA_DIR" ]; then

@@ -37,14 +37,14 @@ This project implements several standard kernels:
 ```
 ├── meson.build     # Build configuration
 ├── build           # Output directory (created by build)
-├── data            # Output directory
-│   ├── values      # CSV files (time_data.csv)
-│   └── plots       # Generated plots
-├── images          # Input and output directory for BMP images
-│   ├── base        # Place input BMP files here
-│   └── [kernel]    # Output directories (automatically created)
 ├── scripts         # Utility scripts
 └── src             # Source code
+
+Project Root:
+├── data            # Output directory
+│   ├── chrono      # CSV files (time_data.csv, speedups_data.csv)
+│   └── plots       # Generated plots
+└── images          # Input and output directory for BMP images
 ```
 
 ## Setup
@@ -168,16 +168,14 @@ We provide several utility targets and scripts to help manage the project artifa
 
 ### Plotting & Analysis
 
-To visualize the benchmark results, you can use the plotting script. This requires `pandas` and `matplotlib`.
+To visualize the benchmark results, use the tools in the `../visualization` directory.
 
 **Generate Plots:**
 
 ```bash
-# Using Meson
-meson compile -C build plot
-
-# Using Script
-python3 scripts/plot.py
+cd ../visualization
+uv sync
+uv run main.py --data ../data/chrono/speedups_data.csv --output ../data/plots
 ```
 
 **Run Benchmark Sweep:**
