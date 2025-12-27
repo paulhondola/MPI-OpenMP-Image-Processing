@@ -168,39 +168,17 @@ We provide several utility targets and scripts to help manage the project artifa
 
 ### Plotting & Analysis
 
-The project includes Python scripts for analyzing and visualizing benchmark results.
-
-**Setup Visualization Environment:**
-
-The visualization tools are managed with `uv`.
-
-```bash
-cd visualization
-uv sync
-```
+To visualize the benchmark results, you can use the plotting script. This requires `pandas` and `matplotlib`.
 
 **Generate Plots:**
 
-To generate performance plots from the speedup data:
-
 ```bash
-uv run plot.py
+# Using Meson
+meson compile -C build plot
+
+# Using Script
+python3 scripts/plot.py
 ```
-
-**Arguments:**
-- `--data`: Path to the input CSV file (default: `../data/chronos/speedups_data.csv`)
-- `--output`: Directory to save the plots (default: `plots`)
-
-**Available Plots:**
-
-The script generates the following types of plots in the output directory:
-
-| specific configuration | Plot Type             | Description                                  |
-| ---------------------- | --------------------- | -------------------------------------------- |
-| `speedup_size_*.png`   | Speedup vs Image Size | Performance scaling with increasing workload |
-| `scaling_threads.png`  | Speedup vs Threads    | Strong scaling within a single node (OpenMP) |
-| `scaling_clusters.png` | Speedup vs Clusters   | Strong scaling across nodes (MPI)            |
-| `efficiency.png`       | Parallel Efficiency   | Speedup per core vs Total Cores              |
 
 **Run Benchmark Sweep:**
 
