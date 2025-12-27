@@ -9,7 +9,7 @@
 const char *SINGLE_RUN_CSV_HEADER =
     "Pixel Count,Kernel Size,Clusters,Threads,Time";
 
-#define _DATA_FOLDER PROJECT_ROOT "data/chronos"
+#define _DATA_FOLDER PROJECT_ROOT "data"
 const char *SERIAL_CSV_FILE = _DATA_FOLDER "/serial_data.csv";
 const char *MULTITHREADED_CSV_FILE = _DATA_FOLDER "/multithreaded_data.csv";
 const char *DISTRIBUTED_CSV_FILE = _DATA_FOLDER "/distributed_data.csv";

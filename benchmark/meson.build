@@ -1,6 +1,6 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '0.9.0',
-  default_options : ['warning_level=everything', 'c_std=c99', 'optimization=3', 'b_lto=true'])
+  version : '0.9.1',
+  default_options : ['warning_level=3', 'c_std=c99', 'optimization=3', 'b_lto=true'])
 
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
@@ -82,6 +82,12 @@ run_target('run_all',
    depends : exe
 )
 
+# Runs the sweep script
+run_target('run_sweep',
+  command : ['sh', meson.project_source_root() + '/scripts/run_sweep.sh', mpirun, exe],
+  depends : exe
+)
+
 # Clean Targets
 # Cleans all generated images except the 'base' directory
 run_target('clean_images',
@@ -96,21 +102,4 @@ run_target('clean_data',
 # Kills the running processes
 run_target('kill',
   command : ['sh', meson.project_source_root() + '/scripts/kill_process.sh']
-)
-
-# Plots the data
-python3 = find_program('python3', required : true)
-run_target('plot',
-  command : [
-    python3, 
-    meson.project_source_root() + '/scripts/plot.py',
-    '--data-file', meson.project_source_root() + '/data/chronos/speedups_data.csv',
-    '--output-dir', meson.project_source_root() + '/data/plots'
-  ]
-)
-
-# Runs the sweep script
-run_target('run_sweep',
-  command : ['sh', meson.project_source_root() + '/scripts/run_sweep.sh', mpirun, exe],
-  depends : exe
 )
