@@ -51,9 +51,10 @@ This project implements several standard kernels:
 
 ## Setup
 
-First, create the necessary data and image directories:
+First, enter the benchmark directory and create the necessary data and image directories:
 
 ```bash
+cd benchmark
 ./scripts/setup_project.sh
 ```
 
@@ -89,6 +90,18 @@ meson compile -C build run_task_pool
 
 # Run All benchmarks sequentially
 meson compile -C build run_all
+```
+
+**Run Benchmark Sweep:**
+
+To run a comprehensive sweep of benchmarks across different cluster sizes and thread counts:
+
+```bash
+# Using Meson
+meson compile -C build run_sweep
+
+# Using Script (requires paths to mpirun and executable)
+./scripts/run_sweep.sh mpirun build/mpi_omp_convolution
 ```
 
 ### Manual Compilation
@@ -203,18 +216,6 @@ The script generates the following types of plots in the output directory:
 | `scaling_threads.png`  | Speedup vs Threads    | Strong scaling within a single node (OpenMP) |
 | `scaling_clusters.png` | Speedup vs Clusters   | Strong scaling across nodes (MPI)            |
 | `efficiency.png`       | Parallel Efficiency   | Speedup per core vs Total Cores              |
-
-**Run Benchmark Sweep:**
-
-To run a comprehensive sweep of benchmarks across different cluster sizes and thread counts:
-
-```bash
-# Using Meson
-meson compile -C build run_sweep
-
-# Using Script (requires paths to mpirun and executable)
-./scripts/run_sweep.sh mpirun build/mpi_omp_convolution
-```
 
 ## Cleaning
 
