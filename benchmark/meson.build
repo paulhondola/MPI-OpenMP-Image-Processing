@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '0.9.5',
+  version : '0.9.6',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3', 'b_lto=true'])
 
 cc = meson.get_compiler('c')
@@ -40,6 +40,13 @@ exe = executable('mpi_omp_convolution',
            install : true)
 
 # Run Targets
+
+# Setup data directory
+run_target('setup_project',
+  command : ['sh', meson.project_source_root() + '/scripts/setup_project.sh'],
+  depends : exe
+)
+
 # Serial
 run_target('run_serial',
   command : [exe, '-serial'],
@@ -49,7 +56,7 @@ run_target('run_serial',
 # Multithreaded
 run_target('run_multithreaded',
   command : [exe, '-threads', omp_threads, '-multithreaded'],
-   depends : exe
+  depends : exe
 )
 
 # Distributed
@@ -59,27 +66,27 @@ mpirun = find_program('mpirun', required : true)
 
 run_target('run_distributed',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-distributed'],
-   depends : exe
+  depends : exe
 )
 
 '''
 # Shared
 run_target('run_shared',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-shared'],
-   depends : exe
+  depends : exe
 )
 
 # Task Pool
 run_target('run_task_pool',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-task_pool'],
-   depends : exe
+  depends : exe
 )
 '''
 
 # All
 run_target('run_all',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-all'],
-   depends : exe
+  depends : exe
 )
 
 # Runs the sweep script

@@ -1,5 +1,4 @@
 #include "file_utils.h"
-#include "../config/files.h"
 #include <errno.h>
 #include <stdio.h>
 #include <sys/stat.h>
