@@ -1,6 +1,9 @@
 # Test images (too large to commit to github)
 images/
 
+# CLion / Pycharm
+.idea/
+
 # Meson Cache
 .cache/
 
