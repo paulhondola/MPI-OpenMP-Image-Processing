@@ -538,6 +538,20 @@ wheels = [
 ]
 
 [[package]]
+name = "types-seaborn"
+version = "0.13.2.20251221"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas-stubs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a3/5e/5363e5f29d68e2c92d9459d463fa956692e7f857455f42f6a8f25dc3426b/types_seaborn-0.13.2.20251221.tar.gz", hash = "sha256:20c2d17e62624627eacecf546cf412147dcd4652d6eba3ab393f3380aaa82075", size = 29316, upload-time = "2025-12-21T03:20:39.925Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/72/3cf7f8c123ae813dad6ccbe496bc9cc3571229355c6c86da232e010cbbee/types_seaborn-0.13.2.20251221-py3-none-any.whl", hash = "sha256:c060ceab93174c2625bdd3734e2e35a4e10f7d2c041b17b92a2ee26efa8bf30e", size = 40854, upload-time = "2025-12-21T03:20:39.093Z" },
+]
+
+[[package]]
 name = "tzdata"
 version = "2025.3"
 source = { registry = "https://pypi.org/simple" }
@@ -548,7 +562,7 @@ wheels = [
 
 [[package]]
 name = "visualization"
-version = "0.9.3"
+version = "0.9.4"
 source = { virtual = "." }
 dependencies = [
     { name = "matplotlib" },
@@ -557,6 +571,7 @@ dependencies = [
     { name = "pandas-stubs" },
     { name = "pyrefly" },
     { name = "seaborn" },
+    { name = "types-seaborn" },
 ]
 
 [package.metadata]
@@ -567,4 +582,5 @@ requires-dist = [
     { name = "pandas-stubs", specifier = ">=2.3.3.251219" },
     { name = "pyrefly", specifier = ">=0.46.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "types-seaborn", specifier = ">=0.13.2.20251221" },
 ]

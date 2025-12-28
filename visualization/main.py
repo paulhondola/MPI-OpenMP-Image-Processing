@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
-from data import load_data, preprocess_data
-from plots import (
+from src.data import load_data, preprocess_data
+from src.plots import (
     plot_speedup_vs_size,
     plot_strong_scaling_threads,
     plot_strong_scaling_clusters,

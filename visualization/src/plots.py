@@ -8,31 +8,49 @@ sns.set_theme(style="whitegrid")
 def plot_speedup_vs_size(df, output_dir):
     """Speedup vs Image Size (Pixel Count) for specific configurations"""
     print("Plotting Speedup vs Image Size...")
-    combinations = df[["Clusters", "Threads", "Kernel Size"]].drop_duplicates().values
+    # Group by Cluster and Threads, disregarding Kernel Size for the loop
+    combinations = df[["Clusters", "Threads"]].drop_duplicates().values
 
-    for cluster, thread, k_size in combinations:
-        subset = df[
-            (df["Clusters"] == cluster)
-            & (df["Threads"] == thread)
-            & (df["Kernel Size"] == k_size)
-        ]
+    for cluster, thread in combinations:
+        subset_base = df[(df["Clusters"] == cluster) & (df["Threads"] == thread)]
 
-        if subset.empty:
+        # Get unique kernel sizes for this configuration
+        kernel_sizes = sorted(subset_base["Kernel Size"].unique())
+
+        if len(kernel_sizes) == 0:
             continue
 
-        plt.figure(figsize=(10, 6))
-        sns.lineplot(
-            data=subset, x="Pixel Count", y="Speedup", hue="Implementation", marker="o"
-        )
-        plt.title(
-            f"Speedup vs Image Size\n(Clusters={cluster}, Threads={thread}, Kernel={k_size})"
-        )
-        plt.xscale("log")  # Image sizes often spans orders of magnitude
-        plt.ylabel("Speedup (vs Serial)")
-        plt.xlabel("Pixel Count")
+        # Create subplots
+        fig, axes = plt.subplots(1, len(kernel_sizes), figsize=(12, 6), sharey=True)
+
+        # Ensure axes is iterable if there's only one kernel size
+        if len(kernel_sizes) == 1:
+            axes = [axes]
+
+        for ax, k_size in zip(axes, kernel_sizes):
+            subset = subset_base[subset_base["Kernel Size"] == k_size]
+
+            sns.lineplot(
+                data=subset,
+                x="Pixel Count",
+                y="Speedup",
+                hue="Implementation",
+                marker="o",
+                ax=ax,
+            )
+
+            ax.set_title(f"Kernel Size = {k_size}")
+            ax.set_xscale("log")  # Image sizes often spans orders of magnitude
+            ax.set_xlabel("Pixel Count")
+            ax.grid(True)
+
+        # Set shared y-label on the first subplot
+        axes[0].set_ylabel("Speedup (vs Serial)")
+
+        plt.suptitle(f"Speedup vs Image Size\n(Clusters={cluster}, Threads={thread})")
         plt.tight_layout()
 
-        filename = f"speedup_size_C{cluster}_T{thread}_K{k_size}.png"
+        filename = f"speedup_size_C{cluster}_T{thread}.png"
         plt.savefig(output_dir / filename)
         plt.close()
 
