@@ -3,8 +3,8 @@
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Assuming the script is in /scripts, the images are in /images (one level up)
-IMAGES_DIR="$SCRIPT_DIR/../images"
+# Assuming the script is in /scripts, the images are in the root directory /images (two levels down)
+IMAGES_DIR="$SCRIPT_DIR/../../images"
 
 # Safety check: Ensure the images directory exists
 if [ ! -d "$IMAGES_DIR" ]; then

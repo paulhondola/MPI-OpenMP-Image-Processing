@@ -35,18 +35,16 @@ This project implements several standard kernels:
 ## Project Structure
 
 ```
-├── images          # Input and output directory for BMP images
-│   ├── base        # Place input BMP files here
-│   └── [kernel]    # Output directories (automatically created)
-├── benchmark       # C benchmarking code
-│   ├── build       # Output directory (created by build)
-│   ├── meson.build # Build configuration
-│   ├── scripts     # Utility scripts
-│   └── src         # Source code
+├── meson.build     # Build configuration
+├── build           # Output directory (created by build)
+├── scripts         # Utility scripts
+└── src             # Source code
+
+Project Root:
 ├── data            # Output directory
-│   ├── chrono      # CSV files (speedups_data.csv, etc.)
+│   ├── chrono      # CSV files (time_data.csv, speedups_data.csv)
 │   └── plots       # Generated plots
-├── visualization   # Python visualization code
+└── images          # Input and output directory for BMP images
 ```
 
 ## Setup
@@ -170,39 +168,15 @@ We provide several utility targets and scripts to help manage the project artifa
 
 ### Plotting & Analysis
 
-The project includes Python scripts for analyzing and visualizing benchmark results.
-
-**Setup Visualization Environment:**
-
-The visualization tools are managed with `uv`.
-
-```bash
-cd visualization
-uv sync
-```
+To visualize the benchmark results, use the tools in the `../visualization` directory.
 
 **Generate Plots:**
 
-To generate performance plots from the speedup data:
-
 ```bash
+cd ../visualization
+uv sync
 uv run main.py --data ../data/chrono/speedups_data.csv --output ../data/plots
 ```
-
-**Arguments:**
-- `--data`: Path to the input CSV file (default: `../data/chrono/speedups_data.csv`)
-- `--output`: Directory to save the plots (default: `../data/plots`)
-
-**Available Plots:**
-
-The script generates the following types of plots in the output directory:
-
-| specific configuration | Plot Type             | Description                                  |
-| ---------------------- | --------------------- | -------------------------------------------- |
-| `speedup_size_*.png`   | Speedup vs Image Size | Performance scaling with increasing workload |
-| `scaling_threads.png`  | Speedup vs Threads    | Strong scaling within a single node (OpenMP) |
-| `scaling_clusters.png` | Speedup vs Clusters   | Strong scaling across nodes (MPI)            |
-| `efficiency.png`       | Parallel Efficiency   | Speedup per core vs Total Cores              |
 
 **Run Benchmark Sweep:**
 
