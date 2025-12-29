@@ -14,8 +14,7 @@ def preprocess_data(df):
     # but the current structure has columns:
     # Pixel Count,Kernel Size,Clusters,Threads,Serial Speedup,Multithreaded Speedup,Distributed Speedup,...
 
-    # We want to focus on Multithreaded and Distributed for now (ignoring Shared/Task Pool as requested)
-    value_vars = ["Multithreaded Speedup", "Distributed Speedup"]
+    value_vars = ["Multithreaded Speedup", "Distributed Speedup", "Shared Speedup"]
 
     # Filter only columns that exist
     available_vars = [c for c in value_vars if c in df.columns]
