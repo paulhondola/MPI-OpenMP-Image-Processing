@@ -7,7 +7,8 @@
 #include "../errors/errors.h"
 
 // Callback type for convolution functions
-typedef app_error (*convolve_function)(Image *img, Kernel ker,
+typedef app_error (*convolve_function)(Image *img, const char *img_name,
+                                       const char *benchmark_type, Kernel ker,
                                        double *elapsed_time);
 
 /**

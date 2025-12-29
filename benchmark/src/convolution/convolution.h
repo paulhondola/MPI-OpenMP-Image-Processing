@@ -13,12 +13,20 @@
  *         - SUCCESS: Convolution completed successfully
  *         - ERR_MEM_ALLOC: Memory allocation failed for output image
  */
-app_error convolve_serial(Image *img, Kernel kernel, double *elapsed_time);
-app_error convolve_parallel_multithreaded(Image *img, Kernel kernel,
-                                          double *elapsed_time);
-app_error convolve_parallel_distributed_filesystem(Image *img, Kernel kernel,
+app_error convolve_serial(Image *img, const char *img_name,
+                          const char *benchmark_type, Kernel kernel,
+                          double *elapsed_time);
+app_error convolve_parallel_multithreaded(Image *img, const char *img_name,
+                                          const char *benchmark_type,
+                                          Kernel kernel, double *elapsed_time);
+app_error convolve_parallel_distributed_filesystem(Image *img,
+                                                   const char *img_name,
+                                                   const char *benchmark_type,
+                                                   Kernel kernel,
                                                    double *elapsed_time);
-app_error convolve_parallel_shared_filesystem(Image *img, Kernel kernel,
+app_error convolve_parallel_shared_filesystem(Image *img, const char *img_name,
+                                              const char *benchmark_type,
+                                              Kernel kernel,
                                               double *elapsed_time);
 
 app_error check_images_match(Image *img1, Image *img2);

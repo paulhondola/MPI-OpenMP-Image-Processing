@@ -51,10 +51,9 @@ app_error run_benchmark_parallel_shared_fs(void) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank == 0) {
     printf("\n--- Starting Parallel Benchmark (Shared Filesystem) ---\n");
-    return run_all_files(SHARED_FOLDER, convolve_parallel_shared_filesystem,
-                         benchmark_data[3]);
   }
-  return SUCCESS;
+  return run_all_files(SHARED_FOLDER, convolve_parallel_shared_filesystem,
+                       benchmark_data[3]);
 }
 
 app_error run_benchmark_task_pool(void) {

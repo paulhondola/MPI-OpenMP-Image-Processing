@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '0.9.6',
+  version : '0.10.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3', 'b_lto=true'])
 
 cc = meson.get_compiler('c')
@@ -69,13 +69,14 @@ run_target('run_distributed',
   depends : exe
 )
 
-'''
+
 # Shared
 run_target('run_shared',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-shared'],
   depends : exe
 )
 
+'''
 # Task Pool
 run_target('run_task_pool',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-task_pool'],
@@ -110,3 +111,4 @@ run_target('clean_data',
 run_target('kill',
   command : ['sh', meson.project_source_root() + '/scripts/kill_process.sh']
 )
+
