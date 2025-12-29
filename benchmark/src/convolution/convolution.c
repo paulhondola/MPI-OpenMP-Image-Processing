@@ -101,7 +101,7 @@ app_error convolve_parallel_multithreaded(Image *img, const char *img_name,
   const Pixel *restrict input_data = img->data;
   const double *restrict kernel_data = kernel.data;
 
-#pragma omp parallel for collapse(2) schedule(dynamic)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       double r_acc = 0, g_acc = 0, b_acc = 0;
@@ -281,7 +281,7 @@ app_error convolve_parallel_distributed_filesystem(Image *img,
   // 6. Compute Convolution (OpenMP)
   int half_k = halo_size;
 
-#pragma omp parallel for collapse(2) schedule(dynamic)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int y = 0; y < local_h; y++) {
     for (int x = 0; x < width; x++) {
       double r_acc = 0, g_acc = 0, b_acc = 0;
@@ -452,7 +452,7 @@ app_error convolve_parallel_shared_filesystem(Image *img, const char *img_name,
   // 6. Compute Convolution (OpenMP)
   int half_k = halo_size;
 
-#pragma omp parallel for collapse(2) schedule(dynamic)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int y = 0; y < local_h; y++) {
     for (int x = 0; x < width; x++) {
       double r_acc = 0, g_acc = 0, b_acc = 0;

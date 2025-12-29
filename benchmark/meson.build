@@ -1,6 +1,6 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '0.10.0',
-  default_options : ['warning_level=3', 'c_std=c99', 'optimization=3', 'b_lto=true'])
+  version : '0.10.1',
+  default_options : ['warning_level=3', 'c_std=c99', 'optimization=0'])
 
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
@@ -47,21 +47,16 @@ run_target('setup_project',
   depends : exe
 )
 
-# Serial
 run_target('run_serial',
   command : [exe, '-serial'],
   depends : exe
 )
 
-# Multithreaded
 run_target('run_multithreaded',
   command : [exe, '-threads', omp_threads, '-multithreaded'],
   depends : exe
 )
 
-# Distributed
-# We use 'mpirun' (or mpiexec) which should be available if MPI dependency is found.
-# Meson doesn't have a built-in 'mpirun' variable exposed easily without finding program.
 mpirun = find_program('mpirun', required : true)
 
 run_target('run_distributed',
@@ -69,15 +64,12 @@ run_target('run_distributed',
   depends : exe
 )
 
-
-# Shared
 run_target('run_shared',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-shared'],
   depends : exe
 )
 
 '''
-# Task Pool
 run_target('run_task_pool',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-task_pool'],
   depends : exe
