@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <mpi.h>
 #include <stdio.h>
+#include <string.h>
 
 app_error create_implementation_directories(const char *kernel_dir) {
 
@@ -62,7 +63,8 @@ app_error run_single_kernel(Image *img, const char *img_name, Kernel kernel,
   if (rank == 0)
     printf("\tApplying kernel: %s\n", kernel.name);
 
-  app_error err = cv_fn(img, kernel, elapsed_time);
+  app_error err =
+      cv_fn(img, img_name, benchmark_type_folder, kernel, elapsed_time);
   if (err) {
     if (rank == 0)
       fprintf(stderr, "\tError executing kernel %s: %d\n", kernel.name, err);
@@ -71,19 +73,29 @@ app_error run_single_kernel(Image *img, const char *img_name, Kernel kernel,
 
   // Only rank 0 saves the image and logs
   if (rank == 0) {
-    printf("\tTime: %.6f s\n", *elapsed_time);
-    char output_path[PATH_MAX];
-    snprintf(output_path, PATH_MAX, "%s/%s/%s/%s", IMAGES_FOLDER, kernel.name,
-             benchmark_type_folder, img_name);
+    if (strcmp(benchmark_type_folder, SHARED_FOLDER) != 0) {
+      // Normal saving for Serial, Multithreaded, Distributed
+      printf("\tTime: %.6f s\n", *elapsed_time);
+      char output_path[PATH_MAX];
+      snprintf(output_path, PATH_MAX, "%s/%s/%s/%s", IMAGES_FOLDER, kernel.name,
+               benchmark_type_folder, img_name);
 
-    err = save_BMP(img, output_path);
-    if (err) {
-      fprintf(stderr, "\t\tError: Could not save to %s: %s\n", output_path,
-              get_error_string(err));
-      return err;
+      err = save_BMP(img, output_path);
+      if (err) {
+        fprintf(stderr, "\t\tError: Could not save to %s: %s\n", output_path,
+                get_error_string(err));
+        return err;
+      }
+
+      printf("\t\tSaved to: %s\n\n", output_path);
+    } else {
+      // Shared Filesystem mode writes directly in the benchmark function
+      printf("\tTime: %.6f s\n", *elapsed_time);
+      char output_path[PATH_MAX];
+      snprintf(output_path, PATH_MAX, "%s/%s/%s/%s", IMAGES_FOLDER, kernel.name,
+               benchmark_type_folder, img_name);
+      printf("\t\tSaved to: %s\n\n", output_path);
     }
-
-    printf("\t\tSaved to: %s\n\n", output_path);
   }
   return SUCCESS;
 }

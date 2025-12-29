@@ -1,7 +1,10 @@
 #include "convolution.h"
+#include "../bmp/mpi_bmp_io.h"
+#include "../config/files.h"
 #include <mpi.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syslimits.h>
 #include <unistd.h>
 
 unsigned char cast_to_pixel_value(double val) {
@@ -25,7 +28,11 @@ void clamp_to_boundary(int *px, int *py, int width, int height) {
     *py = height - 1;
 }
 
-app_error convolve_serial(Image *img, Kernel kernel, double *elapsed_time) {
+app_error convolve_serial(Image *img, const char *img_name,
+                          const char *benchmark_type, Kernel kernel,
+                          double *elapsed_time) {
+  (void)img_name;
+  (void)benchmark_type;
   double start_time = MPI_Wtime();
   int width = img->width;
   int height = img->height;
@@ -74,8 +81,11 @@ app_error convolve_serial(Image *img, Kernel kernel, double *elapsed_time) {
   return SUCCESS;
 }
 
-app_error convolve_parallel_multithreaded(Image *img, Kernel kernel,
-                                          double *elapsed_time) {
+app_error convolve_parallel_multithreaded(Image *img, const char *img_name,
+                                          const char *benchmark_type,
+                                          Kernel kernel, double *elapsed_time) {
+  (void)img_name;
+  (void)benchmark_type;
   double start_time = MPI_Wtime();
   int width = img->width;
   int height = img->height;
@@ -91,7 +101,7 @@ app_error convolve_parallel_multithreaded(Image *img, Kernel kernel,
   const Pixel *restrict input_data = img->data;
   const double *restrict kernel_data = kernel.data;
 
-#pragma omp parallel for collapse(2) schedule(dynamic)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       double r_acc = 0, g_acc = 0, b_acc = 0;
@@ -165,8 +175,13 @@ void exchange_halos(Pixel *data, int width, int local_h, int halo_size,
                MPI_COMM_WORLD, &status);
 }
 
-app_error convolve_parallel_distributed_filesystem(Image *img, Kernel kernel,
+app_error convolve_parallel_distributed_filesystem(Image *img,
+                                                   const char *img_name,
+                                                   const char *benchmark_type,
+                                                   Kernel kernel,
                                                    double *elapsed_time) {
+  (void)img_name;
+  (void)benchmark_type;
   double start_time = MPI_Wtime();
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -266,7 +281,7 @@ app_error convolve_parallel_distributed_filesystem(Image *img, Kernel kernel,
   // 6. Compute Convolution (OpenMP)
   int half_k = halo_size;
 
-#pragma omp parallel for collapse(2) schedule(dynamic)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int y = 0; y < local_h; y++) {
     for (int x = 0; x < width; x++) {
       double r_acc = 0, g_acc = 0, b_acc = 0;
@@ -284,13 +299,6 @@ app_error convolve_parallel_distributed_filesystem(Image *img, Kernel kernel,
             px = 0;
           if (px >= width)
             px = width - 1;
-
-          // Y coordinate is already safely inside local_data thanks to halos
-          // BUT: Are we sure 'py' is valid?
-          // py ranges from [0, local_buffer_height-1] essentially.
-          // y=0, ky=0 -> py = halo_size - half_k = 0. Valid.
-          // y=local_h-1, ky=k_size-1 -> py = local_h-1 + halo_size + half_k =
-          // local_h + 2*half_k - 1. Valid.
 
           Pixel p = local_data[py * width + px];
           double k_val = local_kernel_data[ky * k_size + kx];
@@ -345,9 +353,166 @@ app_error convolve_parallel_distributed_filesystem(Image *img, Kernel kernel,
   return SUCCESS;
 }
 
-app_error convolve_parallel_shared_filesystem(Image *img, Kernel kernel,
+app_error convolve_parallel_shared_filesystem(Image *img, const char *img_name,
+                                              const char *benchmark_type,
+                                              Kernel kernel,
                                               double *elapsed_time) {
-  return convolve_parallel_multithreaded(img, kernel, elapsed_time);
+  double start_time = MPI_Wtime();
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  int width, height, k_size;
+  char input_path[PATH_MAX];
+
+  // 1. Root broadcasts dimensions and kernel
+  if (rank == 0) {
+    width = img->width;
+    height = img->height;
+    k_size = kernel.size;
+    snprintf(input_path, PATH_MAX, "%s/%s/%s", IMAGES_FOLDER, BASE_FOLDER,
+             img_name);
+  }
+  MPI_Bcast(&width, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&height, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&k_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(input_path, PATH_MAX, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+  // Broadcast Kernel Data
+  double *local_kernel_data = NULL;
+  if (rank == 0) {
+    local_kernel_data = (double *)kernel.data;
+  } else {
+    local_kernel_data = (double *)malloc(k_size * k_size * sizeof(double));
+    if (!local_kernel_data)
+      return ERR_MEM_ALLOC;
+  }
+  MPI_Bcast(local_kernel_data, k_size * k_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  // 2. Calculate Chunk Splits
+  int local_h, start_y;
+  get_chunk_metadata(height, rank, size, &start_y, &local_h);
+
+  // 3. Parallel Read (MPI IO)
+  // Each rank reads its own chunk of rows.
+  // mpi_read_BMP_chunk allocates the image structure for us.
+  Image *local_chunk_img = NULL;
+  app_error err = mpi_read_BMP_chunk(&local_chunk_img, input_path, start_y,
+                                     local_h, NULL, NULL);
+  if (err != SUCCESS) {
+    if (rank != 0)
+      free(local_kernel_data);
+    return err;
+  }
+
+  // 4. Prepare for Convolution (Halos)
+  // We need a buffer that includes halos. local_chunk_img only has the core
+  // rows.
+  int halo_size = k_size / 2;
+  int local_buffer_height = local_h + 2 * halo_size;
+  Pixel *local_data =
+      (Pixel *)malloc(local_buffer_height * width * sizeof(Pixel));
+  Pixel *local_output = (Pixel *)malloc(local_h * width * sizeof(Pixel));
+
+  if (!local_data || !local_output) {
+    if (rank != 0)
+      free(local_kernel_data);
+    free_BMP(local_chunk_img); // This frees local_chunk_img->data too
+    return ERR_MEM_ALLOC;
+  }
+
+  // Copy read data into the middle of local_data
+  // chunk data is size [local_h * width]
+  memcpy(local_data + halo_size * width, local_chunk_img->data,
+         local_h * width * sizeof(Pixel));
+
+  // We can free the read buffer now as we copied it
+  free_BMP(local_chunk_img);
+
+  // 5. Exchange Halos
+  exchange_halos(local_data, width, local_h, halo_size, rank, size);
+
+  // Manual clamp fill for global boundaries
+  if (rank == 0) {
+    // Fill top halo with first row
+    for (int h = 0; h < halo_size; h++) {
+      memcpy(local_data + h * width, local_data + halo_size * width,
+             width * sizeof(Pixel));
+    }
+  }
+  if (rank == size - 1) {
+    // Fill bottom halo with last row
+    for (int h = 0; h < halo_size; h++) {
+      memcpy(local_data + (local_h + halo_size + h) * width,
+             local_data + (local_h + halo_size - 1) * width,
+             width * sizeof(Pixel));
+    }
+  }
+
+  // 6. Compute Convolution (OpenMP)
+  int half_k = halo_size;
+
+#pragma omp parallel for collapse(2) schedule(static)
+  for (int y = 0; y < local_h; y++) {
+    for (int x = 0; x < width; x++) {
+      double r_acc = 0, g_acc = 0, b_acc = 0;
+
+      for (int ky = 0; ky < k_size; ky++) {
+        for (int kx = 0; kx < k_size; kx++) {
+          int py = y + halo_size + ky - half_k;
+          int px = x + kx - half_k;
+
+          if (px < 0)
+            px = 0;
+          if (px >= width)
+            px = width - 1;
+
+          Pixel p = local_data[py * width + px];
+          double k_val = local_kernel_data[ky * k_size + kx];
+
+          r_acc += p.r * k_val;
+          g_acc += p.g * k_val;
+          b_acc += p.b * k_val;
+        }
+      }
+
+      Pixel out_p;
+      clamp_pixel(&out_p, r_acc, g_acc, b_acc);
+      local_output[y * width + x] = out_p;
+    }
+  }
+
+  // 7. Parallel Write (MPI IO)
+  char output_path[PATH_MAX];
+  if (rank == 0) {
+    snprintf(output_path, PATH_MAX, "%s/%s/%s/%s", IMAGES_FOLDER, kernel.name,
+             benchmark_type, img_name);
+  }
+  MPI_Bcast(output_path, PATH_MAX, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+  // Wrap local_output in an Image struct for the write function
+  Image out_img_wrapper;
+  out_img_wrapper.width = width;
+  out_img_wrapper.height = local_h; // Height of this CHUNK
+  out_img_wrapper.data = local_output;
+
+  err = mpi_write_BMP_chunk(&out_img_wrapper, output_path, start_y, width,
+                            height);
+  if (err != SUCCESS) {
+    // cleanup
+  }
+
+  // 8. Cleanup
+  free(local_data);
+  free(local_output);
+  if (rank != 0)
+    free(local_kernel_data);
+
+  double end_time = MPI_Wtime();
+  if (elapsed_time != NULL)
+    *elapsed_time = end_time - start_time;
+
+  return err;
 }
 
 app_error check_images_match(Image *img1, Image *img2) {

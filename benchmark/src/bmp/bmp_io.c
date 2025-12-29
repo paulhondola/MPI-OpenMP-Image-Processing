@@ -1,6 +1,14 @@
 #include "bmp_io.h"
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define HEADER_SIZE 54
+#define HEADER_FILE_SIZE_OFFSET 2
+#define HEADER_WIDTH_OFFSET 18
+#define HEADER_HEIGHT_OFFSET 22
+#define HEADER_BITS_PER_PIXEL_OFFSET 28
+#define BITS_PER_PIXEL 24
 
 Pixel *alloc_pixel(int width, int height) {
   Pixel *data = (Pixel *)malloc(width * height * sizeof(Pixel));
@@ -31,12 +39,13 @@ Image *alloc_image(Pixel *data, int width, int height) {
 app_error read_BMP(Image **img, const char *filename) {
   FILE *f = fopen(filename, "rb");
   if (!f) {
-    fprintf(stderr, "Error: Could not open file %s\n", filename);
+    fprintf(stderr, "Error: Could not open file %s: %s\n", filename,
+            strerror(errno));
     return ERR_FILE_OPEN;
   }
 
-  unsigned char header[54];
-  if (fread(header, sizeof(unsigned char), 54, f) != 54) {
+  unsigned char header[HEADER_SIZE];
+  if (fread(header, sizeof(unsigned char), HEADER_SIZE, f) != HEADER_SIZE) {
     fprintf(stderr, "Error: Invalid BMP header\n");
     fclose(f);
     return ERR_BMP_HEADER;
@@ -48,11 +57,11 @@ app_error read_BMP(Image **img, const char *filename) {
     return ERR_BMP_HEADER;
   }
 
-  int width = *(int *)&header[18];
-  int height = *(int *)&header[22];
-  int bitsPerPixel = *(short *)&header[28];
+  int width = *(int *)&header[HEADER_WIDTH_OFFSET];
+  int height = *(int *)&header[HEADER_HEIGHT_OFFSET];
+  int bitsPerPixel = *(short *)&header[HEADER_BITS_PER_PIXEL_OFFSET];
 
-  if (bitsPerPixel != 24) {
+  if (bitsPerPixel != BITS_PER_PIXEL) {
     fprintf(stderr, "Error: Only 24-bit BMPs are supported\n");
     fclose(f);
     return ERR_BMP_HEADER;
@@ -128,9 +137,9 @@ app_error save_BMP(const Image *img, const char *filename) {
   int width = img->width;
   int height = img->height;
   int row_padded = (width * 3 + 3) & (~3);
-  int fileSize = 54 + row_padded * height;
+  int fileSize = HEADER_SIZE + row_padded * height;
 
-  unsigned char header[54] = {
+  unsigned char header[HEADER_SIZE] = {
       'B', 'M',       // Signature
       0,   0,   0, 0, // File size
       0,   0,   0, 0, // Reserved
@@ -149,11 +158,11 @@ app_error save_BMP(const Image *img, const char *filename) {
   };
 
   // Fill in width, height, and file size
-  *(int *)&header[2] = fileSize;
-  *(int *)&header[18] = width;
-  *(int *)&header[22] = height;
+  *(int *)&header[HEADER_FILE_SIZE_OFFSET] = fileSize;
+  *(int *)&header[HEADER_WIDTH_OFFSET] = width;
+  *(int *)&header[HEADER_HEIGHT_OFFSET] = height;
 
-  fwrite(header, sizeof(unsigned char), 54, f);
+  fwrite(header, sizeof(unsigned char), HEADER_SIZE, f);
 
   unsigned char *row = (unsigned char *)calloc(1, row_padded);
   if (!row) {
