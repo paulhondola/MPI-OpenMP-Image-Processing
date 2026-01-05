@@ -1,6 +1,6 @@
 project('MpiOmpImageProcessing', 'c',
   version : '1.0.0',
-  default_options : ['warning_level=3', 'c_std=c99', 'optimization=0'])
+  default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)

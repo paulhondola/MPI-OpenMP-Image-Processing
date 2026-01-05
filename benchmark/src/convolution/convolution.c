@@ -1,23 +1,23 @@
 #include "convolution.h"
 #include "../bmp/mpi_bmp_io.h"
 #include "../config/files.h"
+#include <limits.h>
 #include <mpi.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/syslimits.h>
 #include <unistd.h>
 
-unsigned char cast_to_pixel_value(double val) {
+inline unsigned char cast_to_pixel_value(double val) {
   return (unsigned char)(val < 0 ? 0 : (val > 255 ? 255 : val));
 }
 
-void clamp_pixel(Pixel *p, double r, double g, double b) {
+inline void clamp_pixel(Pixel *p, double r, double g, double b) {
   p->r = cast_to_pixel_value(r);
   p->g = cast_to_pixel_value(g);
   p->b = cast_to_pixel_value(b);
 }
 
-void clamp_to_boundary(int *px, int *py, int width, int height) {
+inline void clamp_to_boundary(int *px, int *py, int width, int height) {
   if (*px < 0)
     *px = 0;
   if (*px >= width)

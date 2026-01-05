@@ -16,4 +16,7 @@ echo "Cleaning all data in '$DATA_DIR'..."
 
 rm -rf "$DATA_DIR"/*
 
+mkdir -p "$DATA_DIR/plots"
+mkdir -p "$DATA_DIR/chrono"
+
 echo "Cleanup complete."
