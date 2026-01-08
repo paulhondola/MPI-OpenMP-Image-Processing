@@ -1,9 +1,9 @@
 #ifndef __CONVOLUTION_H__
 #define __CONVOLUTION_H__
 
-#include "../bmp/bmp_io.h"
-#include "../config/kernel.h"
-#include "../errors/errors.h"
+#include "bmp/bmp_io.h"
+#include "config/kernel.h"
+#include "errors/errors.h"
 
 /**
  * Applies a convolution kernel to an image.
@@ -28,6 +28,10 @@ app_error convolve_parallel_shared_filesystem(Image *img, const char *img_name,
                                               const char *benchmark_type,
                                               Kernel kernel,
                                               double *elapsed_time);
+
+app_error convolve_parallel_task_pool(Image *img, const char *img_name,
+                                      const char *benchmark_type, Kernel kernel,
+                                      double *elapsed_time);
 
 app_error check_images_match(Image *img1, Image *img2);
 

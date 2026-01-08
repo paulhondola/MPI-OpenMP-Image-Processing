@@ -1,7 +1,7 @@
 #ifndef __BENCHMARK_RUN_H__
 #define __BENCHMARK_RUN_H__
 
-#include "../errors/errors.h"
+#include "errors/errors.h"
 
 typedef struct {
   int omp_threads;
@@ -51,7 +51,9 @@ app_error run_benchmark_parallel_shared_fs(void);
 
 /**
  * @brief Runs the parallel benchmark using a Task Pool approach.
- * Currently uses multithreaded implementation as a placeholder.
+ * The producer-consumer pattern is used to parallelize the convolution,
+ * the master thread creates tasks for each chunk and the worker threads
+ * execute them.
  * @return app_error code
  */
 app_error run_benchmark_task_pool(void);
