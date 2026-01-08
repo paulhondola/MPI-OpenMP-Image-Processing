@@ -11,7 +11,6 @@
 #include <string.h>
 
 #define DEFAULT_THREAD_COUNT 1
-#define DEFAULT_THREAD_COUNT 1
 
 void print_usage(const char *prog_name) {
   printf("Usage: %s [options]\n", prog_name);
