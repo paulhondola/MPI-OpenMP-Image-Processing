@@ -1,8 +1,6 @@
 #include "benchmark_run.h"
-#include "../bmp/bmp_io.h"
-#include "../config/files.h"
-#include "../config/kernel.h"
-#include "../convolution/convolution.h"
+#include "config/files.h"
+#include "convolution/convolution.h"
 #include "kernel_run.h"
 #include <limits.h>
 #include <mpi.h>

@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.3.0',
+  version : '1.3.1',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')

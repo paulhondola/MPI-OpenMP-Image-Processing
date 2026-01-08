@@ -1,8 +1,8 @@
 #include "benchmark_io.h"
-#include "../bmp/bmp_io.h"
-#include "../config/files.h"
-#include "../config/kernel.h"
-#include "../file_utils/file_utils.h"
+#include "bmp/bmp_io.h"
+#include "config/files.h"
+#include "config/kernel.h"
+#include "file_utils/file_utils.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>

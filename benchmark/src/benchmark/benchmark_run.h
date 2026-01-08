@@ -1,7 +1,7 @@
 #ifndef __BENCHMARK_RUN_H__
 #define __BENCHMARK_RUN_H__
 
-#include "../errors/errors.h"
+#include "errors/errors.h"
 
 typedef struct {
   int omp_threads;
