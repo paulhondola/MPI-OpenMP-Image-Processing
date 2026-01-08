@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.1.0',
+  version : '1.3.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -21,12 +21,13 @@ src_files = files(
   'src/benchmark/benchmark_io.c',
   'src/config/kernel.c',
   'src/config/files.c',
-  'src/main.c',
   'src/errors/errors.c',
   'src/bmp/bmp_io.c',
   'src/bmp/mpi_bmp_io.c',
   'src/convolution/convolution.c',
-  'src/file_utils/file_utils.c'
+  'src/file_utils/file_utils.c',
+  'src/tests/validate_images.c',
+  'src/main.c',
 )
 
 # Include directories

@@ -1,6 +1,7 @@
 
 #include "benchmark/benchmark_io.h"
 #include "benchmark/benchmark_run.h"
+#include "tests/validate_images.h"
 #include <limits.h>
 #include <mpi.h>
 #include <omp.h>

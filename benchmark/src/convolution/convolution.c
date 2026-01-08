@@ -1,6 +1,6 @@
 #include "convolution.h"
-#include "../bmp/mpi_bmp_io.h"
-#include "../config/files.h"
+#include "bmp/mpi_bmp_io.h"
+#include "config/files.h"
 #include <limits.h>
 #include <mpi.h>
 #include <stdlib.h>
@@ -513,29 +513,6 @@ app_error convolve_parallel_shared_filesystem(Image *img, const char *img_name,
     *elapsed_time = end_time - start_time;
 
   return err;
-}
-
-app_error check_images_match(Image *img1, Image *img2) {
-  if (img1->width != img2->width || img1->height != img2->height) {
-    return ERR_IMAGE_DIFFERENCE;
-  }
-
-  int match = 1;
-
-#pragma omp parallel for shared(match)
-  for (int i = 0; i < img1->width * img1->height; i++) {
-    if (!match)
-      continue; // Early exit
-
-    if (img1->data[i].r != img2->data[i].r ||
-        img1->data[i].g != img2->data[i].g ||
-        img1->data[i].b != img2->data[i].b) {
-#pragma omp atomic write
-      match = 0;
-    }
-  }
-
-  return match ? SUCCESS : ERR_IMAGE_DIFFERENCE;
 }
 
 #define TASK_CHUNK_SIZE 32
