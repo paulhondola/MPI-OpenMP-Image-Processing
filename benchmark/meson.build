@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.0.0',
+  version : '1.1.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -14,19 +14,28 @@ omp_threads = '8'
 omp_dep = dependency('openmp')
 mpi_dep = dependency('mpi', language : 'c')
 
-# Source files
-src_files = files(
+# Files that are used by both the main executable and the test executable
+core_files = files(
   'src/benchmark/kernel_run.c',
   'src/benchmark/benchmark_run.c',
   'src/benchmark/benchmark_io.c',
   'src/config/kernel.c',
   'src/config/files.c',
-  'src/main.c',
   'src/errors/errors.c',
   'src/bmp/bmp_io.c',
   'src/bmp/mpi_bmp_io.c',
   'src/convolution/convolution.c',
   'src/file_utils/file_utils.c'
+)
+
+# Main source file
+src_files = core_files + files(
+  'src/main.c',
+)
+
+# Test source files
+test_src_files = core_files + files(
+  'tests/validate_images.c',
 )
 
 # Include directories
@@ -38,6 +47,13 @@ exe = executable('mpi_omp_convolution',
            include_directories : inc_dir,
            dependencies : [omp_dep, mpi_dep, m_dep],
            install : true)
+
+# Test Executable
+test_exe = executable('validate_images',
+           test_src_files,
+           include_directories : inc_dir,
+           dependencies : [omp_dep, mpi_dep, m_dep],
+           install : false)
 
 # Run Targets
 
@@ -104,3 +120,5 @@ run_target('kill',
   command : ['sh', meson.project_source_root() + '/scripts/kill_process.sh']
 )
 
+# Tests
+test('Image Validation', test_exe, is_parallel : true)

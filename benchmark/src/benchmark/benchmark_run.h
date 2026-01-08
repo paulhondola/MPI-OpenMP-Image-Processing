@@ -10,7 +10,6 @@ typedef struct {
   unsigned int run_distributed : 1;
   unsigned int run_shared : 1;
   unsigned int run_task_pool : 1;
-  unsigned int verify : 1;
 } BenchmarkConfig;
 
 /**

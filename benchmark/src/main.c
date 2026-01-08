@@ -37,7 +37,6 @@ void parse_args(int argc, char **argv, BenchmarkConfig *config) {
   config->run_distributed = 0;
   config->run_shared = 0;
   config->run_task_pool = 0;
-  config->verify = 0;
 
   bool flags_set = false;
 
@@ -69,8 +68,6 @@ void parse_args(int argc, char **argv, BenchmarkConfig *config) {
       config->run_shared = 1;
       config->run_task_pool = 1;
       flags_set = true;
-    } else if (strcmp(argv[i], "-verify") == 0) {
-      config->verify = 1;
     } else {
       fprintf(stderr, "Unknown argument: %s\n", argv[i]);
       print_usage(argv[0]);
@@ -194,18 +191,6 @@ int main(int argc, char **argv) {
   }
 
   if (comm_rank == 0) {
-    if (config.verify) {
-      // Run verification
-      err = run_verification(config);
-
-      if (err != SUCCESS) {
-        fprintf(stderr, "Verification failed with error: %s\n",
-                get_error_string(err));
-        MPI_Finalize();
-        return err;
-      }
-    }
-
     // Write results to CSV
     err = write_benchmark_results(comm_size, config);
 
