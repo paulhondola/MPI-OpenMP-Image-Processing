@@ -29,6 +29,10 @@ app_error convolve_parallel_shared_filesystem(Image *img, const char *img_name,
                                               Kernel kernel,
                                               double *elapsed_time);
 
+app_error convolve_parallel_task_pool(Image *img, const char *img_name,
+                                      const char *benchmark_type, Kernel kernel,
+                                      double *elapsed_time);
+
 app_error check_images_match(Image *img1, Image *img2);
 
 #endif

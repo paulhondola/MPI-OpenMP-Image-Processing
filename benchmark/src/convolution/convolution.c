@@ -537,3 +537,233 @@ app_error check_images_match(Image *img1, Image *img2) {
 
   return match ? SUCCESS : ERR_IMAGE_DIFFERENCE;
 }
+
+#define TASK_CHUNK_SIZE 32
+#define TAG_REQUEST 1
+#define TAG_TASK 2
+#define TAG_RESULT 3
+#define TAG_TERMINATE 4
+
+app_error convolve_parallel_task_pool(Image *img, const char *img_name,
+                                      const char *benchmark_type, Kernel kernel,
+                                      double *elapsed_time) {
+  (void)img_name;
+  (void)benchmark_type;
+  double start_time = MPI_Wtime();
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  if (size < 2) {
+    if (rank == 0) {
+      return convolve_serial(img, img_name, benchmark_type, kernel,
+                             elapsed_time);
+    }
+    return SUCCESS;
+  }
+
+  int width, height, k_size;
+
+  // 1. Broadcast Dimensions
+  if (rank == 0) {
+    width = img->width;
+    height = img->height;
+    k_size = kernel.size;
+  }
+
+  MPI_Bcast(&width, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&height, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&k_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  // Broadcast Kernel Data
+  double *local_kernel_data = NULL;
+  if (rank == 0) {
+    local_kernel_data = (double *)kernel.data;
+  } else {
+    local_kernel_data = (double *)malloc(k_size * k_size * sizeof(double));
+    if (!local_kernel_data)
+      return ERR_MEM_ALLOC;
+  }
+  MPI_Bcast(local_kernel_data, k_size * k_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  int halo_size = k_size / 2;
+
+  // ---------------------------------------------------------
+  // MASTER (PRODUCER) LOGIC
+  // ---------------------------------------------------------
+  if (rank == 0) {
+    Pixel *output = alloc_pixel(width, height);
+    if (!output)
+      return ERR_MEM_ALLOC;
+
+    int next_row = 0;
+    int active_workers = size - 1;
+
+    MPI_Status status;
+    while (active_workers > 0) {
+      // PROBE for any message
+      MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      int source = status.MPI_SOURCE;
+      int tag = status.MPI_TAG;
+
+      if (tag == TAG_REQUEST) {
+        // Consume request msg
+        int dummy;
+        MPI_Recv(&dummy, 1, MPI_INT, source, TAG_REQUEST, MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+
+        if (next_row < height) {
+          // Send Task
+          int chunks_rows = TASK_CHUNK_SIZE;
+          if (next_row + chunks_rows > height)
+            chunks_rows = height - next_row;
+
+          int input_start_y = next_row - halo_size;
+          int input_end_y = next_row + chunks_rows - 1 + halo_size;
+          int input_h = input_end_y - input_start_y + 1;
+
+          // Prepare buffer
+          Pixel *send_buf = (Pixel *)malloc(input_h * width * sizeof(Pixel));
+          if (!send_buf)
+            return ERR_MEM_ALLOC;
+
+          for (int ly = 0; ly < input_h; ly++) {
+            int global_y = input_start_y + ly;
+            // Clamp/Pad read
+            int read_y = global_y;
+            if (read_y < 0)
+              read_y = 0;
+            if (read_y >= height)
+              read_y = height - 1;
+
+            memcpy(send_buf + ly * width, img->data + read_y * width,
+                   width * sizeof(Pixel));
+          }
+
+          // Send Metadata: [start_y(global), height(output), height(input)]
+          int task_meta[3] = {next_row, chunks_rows, input_h};
+          MPI_Send(task_meta, 3, MPI_INT, source, TAG_TASK, MPI_COMM_WORLD);
+          MPI_Send(send_buf, input_h * width * sizeof(Pixel), MPI_BYTE, source,
+                   TAG_TASK, MPI_COMM_WORLD);
+
+          free(send_buf);
+          next_row += chunks_rows;
+        } else {
+          // Terminate
+          MPI_Send(NULL, 0, MPI_INT, source, TAG_TERMINATE, MPI_COMM_WORLD);
+          active_workers--;
+        }
+      } else if (tag == TAG_RESULT) {
+        // Receive Result
+        int result_meta[2];
+        MPI_Recv(result_meta, 2, MPI_INT, source, TAG_RESULT, MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+
+        int r_start_y = result_meta[0];
+        int r_h = result_meta[1];
+
+        MPI_Recv(output + r_start_y * width, r_h * width * sizeof(Pixel),
+                 MPI_BYTE, source, TAG_RESULT, MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+      }
+    }
+
+    free(img->data);
+    img->data = output;
+  }
+
+  // ---------------------------------------------------------
+  // WORKER LOGIC
+  // ---------------------------------------------------------
+  else {
+    while (1) {
+      // 1. Send Request
+      int dummy = 0;
+      MPI_Send(&dummy, 1, MPI_INT, 0, TAG_REQUEST, MPI_COMM_WORLD);
+
+      // 2. Wait for Task or Terminate
+      MPI_Status status;
+      MPI_Probe(0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      if (status.MPI_TAG == TAG_TERMINATE) {
+        MPI_Recv(NULL, 0, MPI_INT, 0, TAG_TERMINATE, MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+        break;
+      } else if (status.MPI_TAG == TAG_TASK) {
+        int task_meta[3];
+        MPI_Recv(task_meta, 3, MPI_INT, 0, TAG_TASK, MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+
+        int global_start_y = task_meta[0];
+        int output_h = task_meta[1];
+        int input_h = task_meta[2];
+
+        Pixel *input_buf = (Pixel *)malloc(input_h * width * sizeof(Pixel));
+        if (!input_buf)
+          return ERR_MEM_ALLOC;
+        MPI_Recv(input_buf, input_h * width * sizeof(Pixel), MPI_BYTE, 0,
+                 TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        Pixel *output_buf = (Pixel *)malloc(output_h * width * sizeof(Pixel));
+        if (!output_buf) {
+          free(input_buf);
+          return ERR_MEM_ALLOC;
+        }
+
+        int half_k = halo_size;
+
+#pragma omp parallel for collapse(2) schedule(static)
+        for (int y = 0; y < output_h; y++) {
+          for (int x = 0; x < width; x++) {
+            double r_acc = 0, g_acc = 0, b_acc = 0;
+
+            for (int ky = 0; ky < k_size; ky++) {
+              for (int kx = 0; kx < k_size; kx++) {
+                int py = y + halo_size + ky - half_k;
+                int px = x + kx - half_k;
+
+                // Clamp X
+                if (px < 0)
+                  px = 0;
+                if (px >= width)
+                  px = width - 1;
+
+                Pixel p = input_buf[py * width + px];
+                double k_val = local_kernel_data[ky * k_size + kx];
+
+                r_acc += p.r * k_val;
+                g_acc += p.g * k_val;
+                b_acc += p.b * k_val;
+              }
+            }
+
+            Pixel out_p;
+            clamp_pixel(&out_p, r_acc, g_acc, b_acc);
+            output_buf[y * width + x] = out_p;
+          }
+        }
+
+        free(input_buf);
+
+        // 4. Send Result
+        int result_meta[2] = {global_start_y, output_h};
+        MPI_Send(result_meta, 2, MPI_INT, 0, TAG_RESULT, MPI_COMM_WORLD);
+        MPI_Send(output_buf, output_h * width * sizeof(Pixel), MPI_BYTE, 0,
+                 TAG_RESULT, MPI_COMM_WORLD);
+
+        free(output_buf);
+      }
+    }
+  }
+
+  // Cleanup
+  if (rank != 0) {
+    free(local_kernel_data);
+  }
+
+  double end_time = MPI_Wtime();
+  if (elapsed_time != NULL)
+    *elapsed_time = end_time - start_time;
+
+  return SUCCESS;
+}

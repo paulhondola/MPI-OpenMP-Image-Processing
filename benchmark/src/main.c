@@ -146,18 +146,16 @@ app_error run_benchmarks(BenchmarkConfig config) {
     }
   }
 
-  /*
-    if (config.run_task_pool) {
-      err = run_benchmark_task_pool();
-      if (err != SUCCESS) {
-        if (comm_rank == 0)
-          fprintf(stderr,
-                  "Parallel benchmark (Task Pool) failed with error: %s\n",
-                  get_error_string(err));
-        return err;
-      }
+  if (config.run_task_pool) {
+    err = run_benchmark_task_pool();
+    if (err != SUCCESS) {
+      if (comm_rank == 0)
+        fprintf(stderr,
+                "Parallel benchmark (Task Pool) failed with error: %s\n",
+                get_error_string(err));
+      return err;
     }
-  */
+  }
   return err;
 }
 

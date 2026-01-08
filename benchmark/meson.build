@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.0.0',
+  version : '1.1.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -69,20 +69,16 @@ run_target('run_shared',
   depends : exe
 )
 
-'''
 run_target('run_task_pool',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-task_pool'],
   depends : exe
 )
-'''
 
-# All
 run_target('run_all',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-all'],
   depends : exe
 )
 
-# Runs the sweep script
 run_target('run_sweep',
   command : ['sh', meson.project_source_root() + '/scripts/run_sweep.sh', mpirun, exe],
   depends : exe
