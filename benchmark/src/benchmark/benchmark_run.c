@@ -61,10 +61,9 @@ app_error run_benchmark_task_pool(void) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank == 0) {
     printf("\n--- Starting Parallel Benchmark (Task Pool) ---\n");
-    return run_all_files(TASK_POOL_FOLDER, convolve_parallel_task_pool,
-                         benchmark_data[4]);
   }
-  return SUCCESS;
+  return run_all_files(TASK_POOL_FOLDER, convolve_parallel_task_pool,
+                       benchmark_data[4]);
 }
 
 app_error verify_implementation(const char *kernel_dir, const char *impl_folder,

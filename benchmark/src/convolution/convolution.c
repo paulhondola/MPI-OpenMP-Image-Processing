@@ -587,6 +587,8 @@ app_error convolve_parallel_task_pool(Image *img, const char *img_name,
   MPI_Bcast(local_kernel_data, k_size * k_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
   int halo_size = k_size / 2;
+  // printf("Rank %d: Bcast done. Width=%d, Height=%d, K_size=%d\n", rank,
+  // width, height, k_size);
 
   // ---------------------------------------------------------
   // MASTER (PRODUCER) LOGIC
@@ -602,9 +604,11 @@ app_error convolve_parallel_task_pool(Image *img, const char *img_name,
     MPI_Status status;
     while (active_workers > 0) {
       // PROBE for any message
+      // printf("Rank 0: Probing...\n");
       MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
       int source = status.MPI_SOURCE;
       int tag = status.MPI_TAG;
+      // printf("Rank 0: Received tag %d from %d\n", tag, source);
 
       if (tag == TAG_REQUEST) {
         // Consume request msg
