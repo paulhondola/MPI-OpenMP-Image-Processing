@@ -45,6 +45,10 @@ This project implements several standard kernels:
 │   └── src         # Source code
 ├── data            # Output directory
 │   ├── chrono      # CSV files (speedups_data.csv, etc.)
+│   │   ├── serial_data.csv
+│   │   ├── shared_data.csv
+│   │   ├── task_pool_data.csv
+│   │   └── ...
 │   └── plots       # Generated plots
 ├── visualization   # Python visualization code
 ```
@@ -130,6 +134,7 @@ build/mpi_omp_convolution -threads <threads> [mode flags]
 *   `-distributed`      : Run Parallel Distributed Filesystem benchmark
 *   `-shared`           : Run Parallel Shared Filesystem benchmark
 *   `-task_pool`        : Run Parallel Task Pool benchmark
+*   `-verify`           : Verify the output images against the serial implementation
 *   `-all`              : Run All benchmarks
 *   `--help`            : Show usage
 
@@ -146,7 +151,7 @@ mpirun -n 4 build/mpi_omp_convolution -threads 4 -distributed
 mpirun -n 4 build/mpi_omp_convolution -threads 4 -all
 ```
 
-> **Note:** The parallel modes verify their output against the serial output. You must run the Serial benchmark (`-serial`) at least once to generate the reference images, otherwise verification will fail.
+> **Note:** The parallel modes do NOT automatically verify their output. You must add the `-verify` flag to run validation. Verification requires the Serial benchmark (`-serial`) to be run at least once to generate reference images.
 
 ## Configuration
 
