@@ -1,4 +1,4 @@
-#include "mpi_bmp_io.h"
+#include "image/mpi_bmp_io.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
