@@ -1,6 +1,7 @@
-#include "kernel_run.h"
+#include "benchmark/kernel_run.h"
+#include "config/file_utils.h"
 #include "config/files.h"
-#include "file_utils/file_utils.h"
+#include "image/convolution.h"
 #include <limits.h>
 #include <mpi.h>
 #include <stdio.h>

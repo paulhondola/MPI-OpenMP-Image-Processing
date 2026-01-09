@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.3.1',
+  version : '1.4.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -13,6 +13,7 @@ omp_threads = '8'
 # Dependencies
 omp_dep = dependency('openmp')
 mpi_dep = dependency('mpi', language : 'c')
+mpirun = find_program('mpirun', required : true)
 
 # Source files
 src_files = files(
@@ -21,17 +22,17 @@ src_files = files(
   'src/benchmark/benchmark_io.c',
   'src/config/kernel.c',
   'src/config/files.c',
-  'src/errors/errors.c',
-  'src/bmp/bmp_io.c',
-  'src/bmp/mpi_bmp_io.c',
-  'src/convolution/convolution.c',
-  'src/file_utils/file_utils.c',
+  'src/config/errors.c',
+  'src/image/bmp_io.c',
+  'src/image/mpi_bmp_io.c',
+  'src/image/convolution.c',
+  'src/config/file_utils.c',
   'src/tests/validate_images.c',
   'src/main.c',
 )
 
 # Include directories
-inc_dir = include_directories('src')
+inc_dir = include_directories('include')
 
 # Executable
 exe = executable('mpi_omp_convolution',
@@ -57,8 +58,6 @@ run_target('run_multithreaded',
   command : [exe, '-threads', omp_threads, '-multithreaded'],
   depends : exe
 )
-
-mpirun = find_program('mpirun', required : true)
 
 run_target('run_distributed',
   command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-distributed'],

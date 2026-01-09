@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "config/kernel.h"
 
 const double RIDGE_DATA[9] = {0, -1, 0, -1, 4, -1, 0, -1, 0};
 const Kernel RIDGE_KERNEL = {"ridge", 3, RIDGE_DATA};

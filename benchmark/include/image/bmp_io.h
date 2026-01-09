@@ -1,7 +1,7 @@
 #ifndef __BMP_IO_H__
 #define __BMP_IO_H__
 
-#include "errors/errors.h"
+#include "config/errors.h"
 #include <stdio.h>
 
 /* Data structures for representing BMP images in memory */

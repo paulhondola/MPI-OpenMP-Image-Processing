@@ -1,6 +1,6 @@
-#include "convolution.h"
-#include "bmp/mpi_bmp_io.h"
+#include "image/convolution.h"
 #include "config/files.h"
+#include "image/mpi_bmp_io.h"
 #include <limits.h>
 #include <mpi.h>
 #include <stdlib.h>

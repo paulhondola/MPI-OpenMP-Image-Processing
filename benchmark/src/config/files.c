@@ -1,4 +1,4 @@
-#include "files.h"
+#include "config/files.h"
 
 // Fallback in case the compiler flag isn't set
 #ifndef PROJECT_ROOT

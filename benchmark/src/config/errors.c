@@ -1,4 +1,4 @@
-#include "errors.h"
+#include "config/errors.h"
 
 const char *get_error_string(app_error err) {
   switch (err) {

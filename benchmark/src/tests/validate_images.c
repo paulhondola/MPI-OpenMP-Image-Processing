@@ -1,8 +1,8 @@
 #include "benchmark/benchmark_run.h"
-#include "bmp/bmp_io.h"
+#include "config/errors.h"
 #include "config/files.h"
 #include "config/kernel.h"
-#include "errors/errors.h"
+#include "image/bmp_io.h"
 #include <limits.h>
 
 #define GREEN "\033[0;32m"

@@ -1,7 +1,7 @@
 #ifndef MPI_BMP_IO_H
 #define MPI_BMP_IO_H
 
-#include "bmp_io.h"
+#include "image/bmp_io.h"
 #include <mpi.h>
 
 /**
