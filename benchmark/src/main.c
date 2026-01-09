@@ -15,19 +15,19 @@
 void print_usage(const char *prog_name) {
   printf("Usage: %s [options]\n", prog_name);
   printf("Options:\n");
-  printf("  -t <n>  Set number of OpenMP threads (default: %d)\n",
+  printf("  --threads <n>    Set number of OpenMP threads (default: %d)\n",
          DEFAULT_THREAD_COUNT);
-  printf("  -s      Run Serial benchmark\n");
-  printf("  -m      Run Parallel Multithreaded benchmark\n");
-  printf("  -d      Run Parallel Distributed Filesystem benchmark\n");
-  printf("  -h      Run Parallel Shared Filesystem benchmark\n");
-  printf("  -p      Run Parallel Task Pool benchmark\n");
-  printf("  -a      Run All benchmarks\n");
-  printf(
-      "  -verify Verify the output images against the serial implementation\n");
-  printf("  --help  Show this help message\n");
-  printf("\nIf no mode flags are provided, Distributed mode (-d) is run by "
-         "default.\n");
+  printf("  --serial         Run Serial benchmark\n");
+  printf("  --multithreaded  Run Parallel Multithreaded benchmark\n");
+  printf("  --distributed    Run Parallel Distributed Filesystem benchmark\n");
+  printf("  --shared         Run Parallel Shared Filesystem benchmark\n");
+  printf("  --task_pool      Run Parallel Task Pool benchmark\n");
+  printf("  --all            Run All benchmarks\n");
+  printf("  --verify         Verify the output images against the serial "
+         "implementation\n");
+  printf("  --help           Show this help message\n");
+  printf("\nAt least one mode flag (serial, multithreaded, distributed, "
+         "shared, task_pool) must be provided.\n");
 }
 
 void parse_args(int argc, char **argv, BenchmarkConfig *config) {
@@ -45,31 +45,31 @@ void parse_args(int argc, char **argv, BenchmarkConfig *config) {
     if (strcmp(argv[i], "--help") == 0) {
       print_usage(argv[0]);
       exit(0);
-    } else if (strcmp(argv[i], "-threads") == 0 && i + 1 < argc) {
+    } else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc) {
       config->omp_threads = atoi(argv[++i]);
-    } else if (strcmp(argv[i], "-serial") == 0) {
+    } else if (strcmp(argv[i], "--serial") == 0) {
       config->run_serial = 1;
       flags_set = true;
-    } else if (strcmp(argv[i], "-multithreaded") == 0) {
+    } else if (strcmp(argv[i], "--multithreaded") == 0) {
       config->run_multithreaded = 1;
       flags_set = true;
-    } else if (strcmp(argv[i], "-distributed") == 0) {
+    } else if (strcmp(argv[i], "--distributed") == 0) {
       config->run_distributed = 1;
       flags_set = true;
-    } else if (strcmp(argv[i], "-shared") == 0) {
+    } else if (strcmp(argv[i], "--shared") == 0) {
       config->run_shared = 1;
       flags_set = true;
-    } else if (strcmp(argv[i], "-task_pool") == 0) {
+    } else if (strcmp(argv[i], "--task_pool") == 0) {
       config->run_task_pool = 1;
       flags_set = true;
-    } else if (strcmp(argv[i], "-all") == 0) {
+    } else if (strcmp(argv[i], "--all") == 0) {
       config->run_serial = 1;
       config->run_multithreaded = 1;
       config->run_distributed = 1;
       config->run_shared = 1;
       config->run_task_pool = 1;
       flags_set = true;
-    } else if (strcmp(argv[i], "-verify") == 0) {
+    } else if (strcmp(argv[i], "--verify") == 0) {
       config->verify = 1;
     } else {
       fprintf(stderr, "Unknown argument: %s\n", argv[i]);

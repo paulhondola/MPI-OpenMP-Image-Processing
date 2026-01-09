@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.4.0',
+  version : '1.5.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -50,32 +50,32 @@ run_target('setup_project',
 )
 
 run_target('run_serial',
-  command : [exe, '-serial'],
+  command : [exe, '--serial'],
   depends : exe
 )
 
 run_target('run_multithreaded',
-  command : [exe, '-threads', omp_threads, '-multithreaded'],
+  command : [exe, '--threads', omp_threads, '--multithreaded'],
   depends : exe
 )
 
 run_target('run_distributed',
-  command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-distributed'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--distributed'],
   depends : exe
 )
 
 run_target('run_shared',
-  command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-shared'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--shared'],
   depends : exe
 )
 
 run_target('run_task_pool',
-  command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-task_pool'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--task_pool'],
   depends : exe
 )
 
 run_target('run_all',
-  command : [mpirun, '-n', mpi_processes, exe, '-threads', omp_threads, '-all'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--all'],
   depends : exe
 )
 
