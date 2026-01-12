@@ -72,10 +72,11 @@ cd benchmark
 ./scripts/setup_project.sh
 ```
 
-Then, initialize the build directory:
+Then, initialize the build directory and move into it:
 
 ```bash
 meson setup build
+cd build
 ```
 
 This will configure the project and detect your dependencies (MPI, OpenMP).
@@ -88,22 +89,25 @@ We use Meson `run_target`s to execute benchmarks. These targets automatically ha
 
 ```bash
 # Run Serial benchmark
-meson compile -C build run_serial
+meson compile run_serial
 
 # Run Parallel Multithreaded benchmark
-meson compile -C build run_multithreaded
+meson compile run_multithreaded
 
 # Run Parallel Distributed Filesystem benchmark
-meson compile -C build run_distributed
+meson compile run_distributed
 
 # Run Parallel Shared Filesystem benchmark
-meson compile -C build run_shared
+meson compile run_shared
 
 # Run Parallel Task Pool benchmark
-meson compile -C build run_task_pool
+meson compile run_task_pool
 
 # Run All benchmarks sequentially
-meson compile -C build run_all
+meson compile run_all
+
+# IF NOT INSIDE THE BUILD DIR, USE THE -C BUILD FLAG BEFORE THE TARGET
+meson compile -C build ...
 ```
 
 **Run Benchmark Sweep:**
@@ -112,10 +116,8 @@ To run a comprehensive sweep of benchmarks across different cluster sizes and th
 
 ```bash
 # Using Meson
-meson compile -C build run_sweep
-
-# Using Script (requires paths to mpirun and executable)
-./scripts/run_sweep.sh mpirun build/mpi_omp_convolution
+cd build
+meson compile run_sweep
 ```
 
 ### Manual Compilation
@@ -123,7 +125,8 @@ meson compile -C build run_sweep
 If you just want to build the executable without running:
 
 ```bash
-meson compile -C build
+cd build
+meson compile
 ```
 
 The binary will be located at `build/mpi_omp_convolution`.
@@ -134,7 +137,7 @@ You can run the benchmark binary directly to control which modes are executed.
 
 ```bash
 # General syntax
-build/mpi_omp_convolution --threads <threads> [mode flags]
+./mpi_omp_convolution --threads <threads> [mode flags]
 ```
 
 **Flags:**
@@ -152,10 +155,10 @@ build/mpi_omp_convolution --threads <threads> [mode flags]
 
 ```bash
 # Run Serial benchmark (generates reference images)
-build/mpi_omp_convolution --serial
+./mpi_omp_convolution --serial
 
 # Run Distributed benchmark with 4 MPI processes and 4 OpenMP threads per rank
-mpirun -n 4 build/mpi_omp_convolution --threads 4 --distributed
+mpirun -n 4 ./mpi_omp_convolution --threads 4 --distributed
 
 # Run All benchmarks
 mpirun -n 4 build/mpi_omp_convolution --threads 4 --all

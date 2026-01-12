@@ -59,6 +59,7 @@ Then, initialize the build directory:
 
 ```bash
 meson setup build
+cd build
 ```
 
 This will configure the project and detect your dependencies (MPI, OpenMP).
@@ -71,22 +72,25 @@ We use Meson `run_target`s to execute benchmarks. These targets automatically ha
 
 ```bash
 # Run Serial benchmark
-meson compile -C build run_serial
+meson compile run_serial
 
 # Run Parallel Multithreaded benchmark
-meson compile -C build run_multithreaded
+meson compile run_multithreaded
 
 # Run Parallel Distributed Filesystem benchmark
-meson compile -C build run_distributed
+meson compile run_distributed
 
 # Run Parallel Shared Filesystem benchmark
-meson compile -C build run_shared
+meson compile run_shared
 
 # Run Parallel Task Pool benchmark
-meson compile -C build run_task_pool
+meson compile run_task_pool
 
 # Run All benchmarks sequentially
-meson compile -C build run_all
+meson compile run_all
+
+# IF NOT INSIDE THE BUILD DIR, USE THE -C BUILD FLAG BEFORE THE TARGET
+meson compile -C build ...
 ```
 
 ### Manual Compilation
@@ -94,7 +98,8 @@ meson compile -C build run_all
 If you just want to build the executable without running:
 
 ```bash
-meson compile -C build
+cd build
+meson compile
 ```
 
 The binary will be located at `build/mpi_omp_convolution`.
@@ -105,7 +110,8 @@ You can run the benchmark binary directly to control which modes are executed.
 
 ```bash
 # General syntax
-build/mpi_omp_convolution -threads <threads> [mode flags]
+cd build
+./mpi_omp_convolution -threads <threads> [mode flags]
 ```
 
 **Flags:**
@@ -121,14 +127,16 @@ build/mpi_omp_convolution -threads <threads> [mode flags]
 **Examples:**
 
 ```bash
+cd build
+
 # Run Serial benchmark (generates reference images)
-build/mpi_omp_convolution -serial
+mpi_omp_convolution -serial
 
 # Run Distributed benchmark with 4 MPI processes and 4 OpenMP threads per rank
-mpirun -n 4 build/mpi_omp_convolution -threads 4 -distributed
+mpirun -n 4 mpi_omp_convolution -threads 4 -distributed
 
 # Run All benchmarks
-mpirun -n 4 build/mpi_omp_convolution -threads 4 -all
+mpirun -n 4 mpi_omp_convolution -threads 4 -all
 ```
 
 > **Note:** The parallel modes verify their output against the serial output. You must run the Serial benchmark (`-serial`) at least once to generate the reference images, otherwise verification will fail.
@@ -166,18 +174,6 @@ We provide several utility targets and scripts to help manage the project artifa
 | **Clean Data**     | `meson compile -C build clean_data`   | `./scripts/clear_data.sh`   | Removes generated CSV files in `data/`.                   |
 | **Kill Processes** | `meson compile -C build kill`         | `./scripts/kill_process.sh` | Kills running `mpi_omp_convolution` processes.            |
 
-### Plotting & Analysis
-
-To visualize the benchmark results, use the tools in the `../visualization` directory.
-
-**Generate Plots:**
-
-```bash
-cd ../visualization
-uv sync
-uv run main.py --data ../data/chrono/speedups_data.csv --output ../data/plots
-```
-
 **Run Benchmark Sweep:**
 
 To run a comprehensive sweep of benchmarks across different cluster sizes and thread counts:
@@ -187,7 +183,7 @@ To run a comprehensive sweep of benchmarks across different cluster sizes and th
 meson compile -C build run_sweep
 
 # Using Script (requires paths to mpirun and executable)
-./scripts/run_sweep.sh mpirun build/mpi_omp_convolution
+./scripts/run_sweep.sh mpirun mpi_omp_convolution
 ```
 
 ## Cleaning
