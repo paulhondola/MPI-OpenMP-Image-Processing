@@ -1,4 +1,4 @@
-#include "image/bmp_io.h"
+#include "../../include/image/bmp_io.h"
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
