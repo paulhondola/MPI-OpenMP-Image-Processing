@@ -1,4 +1,4 @@
-#include "config/file_utils.h"
+#include "../../include/config/file_utils.h"
 #include <errno.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -53,9 +53,11 @@ app_error append_benchmark_result(const char *filename, int width, int height,
     return ERR_FILE_OPEN;
   }
 
-  fprintf(fp, "%d * %d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f\n", width, height,
-          kernel_size, clusters, threads, serial_time, multithreaded_time,
-          distributed_time, shared_time, task_pool_time);
+  int local_threads = threads * clusters;
+
+  fprintf(fp, "%d * %d,%d,%.6f,%d,%.6f,%d,%d,%.6f,%.6f,%.6f\n", width, height,
+          kernel_size, serial_time, local_threads, multithreaded_time, clusters,
+          threads, distributed_time, shared_time, task_pool_time);
 
   fclose(fp);
   return SUCCESS;

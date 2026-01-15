@@ -1,9 +1,9 @@
-#include "benchmark/benchmark_io.h"
-#include "config/errors.h"
-#include "config/file_utils.h"
-#include "config/files.h"
-#include "config/kernel.h"
-#include "image/bmp_io.h"
+#include "../../include/benchmark/benchmark_io.h"
+#include "../../include/config/errors.h"
+#include "../../include/config/file_utils.h"
+#include "../../include/config/files.h"
+#include "../../include/config/kernel.h"
+#include "../../include/image/bmp_io.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -55,10 +55,9 @@ app_error log_kernel_results(int file_number, int kernel_number, int comm_size,
     task_pool_time = benchmark_data[4][file_number][kernel_number];
 
   if (run_all) {
-    int thread_count = config.omp_threads * comm_size;
     err = append_benchmark_result(
         MULTI_RUN_CSV_FILE, width, height, CONV_KERNELS[kernel_number].size,
-        comm_size, thread_count, serial_time, multithreaded_time,
+        comm_size, config.omp_threads, serial_time, multithreaded_time,
         distributed_time, shared_time, task_pool_time);
     if (err != SUCCESS)
       return err;
@@ -129,12 +128,10 @@ app_error log_speedup_results(int f, int k, int comm_size,
   if (task_pool_time > 0)
     task_pool_speedup = serial_time / task_pool_time;
 
-  int thread_count = config.omp_threads * comm_size;
-
   return append_benchmark_result(
       SPEEDUP_CSV_FILE, width, height, CONV_KERNELS[k].size, comm_size,
-      thread_count, serial_speedup, multithreaded_speedup, distributed_speedup,
-      shared_speedup, task_pool_speedup);
+      config.omp_threads, serial_speedup, multithreaded_speedup,
+      distributed_speedup, shared_speedup, task_pool_speedup);
 }
 
 app_error write_benchmark_results(int comm_size, BenchmarkConfig config) {

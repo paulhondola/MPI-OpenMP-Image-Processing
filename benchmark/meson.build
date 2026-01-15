@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.6.0',
+  version : '1.7.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -7,8 +7,8 @@ m_dep = cc.find_library('m', required : false)
 add_project_arguments('-march=native', '-DPROJECT_ROOT="' + meson.project_source_root() + '/"', language : 'c')
 
 # Configuration Variables
-mpi_processes = '8'
-omp_threads = '8'
+mpi_processes = '2'
+omp_threads = '2'
 
 # Dependencies
 omp_dep = dependency('openmp')
@@ -94,7 +94,17 @@ run_target('clean_data',
   command : ['sh', meson.project_source_root() + '/scripts/clear_data.sh']
 )
 
+
 # Kills the running processes
 run_target('kill',
   command : ['sh', meson.project_source_root() + '/scripts/kill_process.sh']
 )
+
+# Test Targets
+test_csv_output = executable('test_csv_output',
+  files('src/tests/test_csv_output.c', 'src/config/file_utils.c', 'src/config/errors.c'),
+  include_directories : inc_dir,
+  dependencies : [omp_dep, mpi_dep, m_dep]
+)
+
+test('test_csv_output', test_csv_output)
