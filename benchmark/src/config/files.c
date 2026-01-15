@@ -1,4 +1,4 @@
-#include "config/files.h"
+#include "../../include/config/files.h"
 
 // Fallback in case the compiler flag isn't set
 #ifndef PROJECT_ROOT
@@ -19,16 +19,16 @@ const char *TASK_POOL_CSV_FILE = _DATA_FOLDER "/task_pool_data.csv";
 // CSV Header for the multi-run data file
 const char *MULTI_RUN_CSV_FILE = _DATA_FOLDER "/time_data.csv";
 const char *MULTI_RUN_CSV_HEADER =
-    "Width * Height,Kernel Size,Clusters,Threads,Serial "
-    "Time,Multithreaded "
-    "Time,Distributed Time,Shared Time,Task Pool Time";
+    "Width * Height,Kernel Size,Serial "
+    "Time,Threads,Multithreaded "
+    "Time,Clusters,Threads,Distributed Time,Shared Time,Task Pool Time";
 
 // CSV Header for the speedup data file
 const char *SPEEDUP_CSV_FILE = _DATA_FOLDER "/speedups_data.csv";
-const char *SPEEDUP_CSV_HEADER =
-    "Width * Height,Kernel Size,Clusters,Threads,Serial "
-    "Speedup,Multithreaded "
-    "Speedup,Distributed Speedup,Shared Speedup,Task Pool Speedup";
+const char *SPEEDUP_CSV_HEADER = "Width * Height,Kernel Size,Serial "
+                                 "Speedup,Threads,Multithreaded "
+                                 "Speedup,Clusters,Threads,Distributed "
+                                 "Speedup,Shared Speedup,Task Pool Speedup";
 
 // Image directories
 #define _IMAGES_FOLDER PROJECT_ROOT "../images"

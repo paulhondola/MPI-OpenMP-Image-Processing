@@ -1,6 +1,6 @@
 [project]
 name = "visualization"
-version = "1.0.0"
+version = "1.7.0"
 description = "Visualization tools for image processing benchmarks"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -1,7 +1,6 @@
-
-#include "benchmark/benchmark_io.h"
-#include "benchmark/benchmark_run.h"
-#include "tests/validate_images.h"
+#include "../include/benchmark/benchmark_io.h"
+#include "../include/benchmark/benchmark_run.h"
+#include "../include/tests/validate_images.h"
 #include <limits.h>
 #include <mpi.h>
 #include <omp.h>
@@ -97,9 +96,14 @@ void init_mpi(int argc, char **argv, int *comm_rank, int *comm_size,
 }
 
 app_error run_benchmarks(BenchmarkConfig config) {
-  int comm_rank;
+  int comm_rank, comm_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
   app_error err = SUCCESS;
+
+  int run_all = config.run_serial && config.run_multithreaded &&
+                config.run_distributed && config.run_shared &&
+                config.run_task_pool;
 
   if (config.run_serial) {
     err = run_benchmark_serial();
@@ -112,6 +116,11 @@ app_error run_benchmarks(BenchmarkConfig config) {
   }
 
   if (config.run_multithreaded) {
+
+    if (run_all) {
+      omp_set_num_threads(config.omp_threads * comm_size);
+    }
+
     err = run_benchmark_parallel_multithreaded();
     if (err != SUCCESS) {
       if (comm_rank == 0)
@@ -119,6 +128,10 @@ app_error run_benchmarks(BenchmarkConfig config) {
                 "Parallel benchmark (Multithreaded) failed with error: %s\n",
                 get_error_string(err));
       return err;
+    }
+
+    if (run_all) {
+      omp_set_num_threads(config.omp_threads);
     }
   }
 
