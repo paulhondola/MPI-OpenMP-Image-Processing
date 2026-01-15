@@ -4,13 +4,13 @@
 #include "config/errors.h"
 
 typedef struct {
-  int omp_threads;
   unsigned int run_serial : 1;
   unsigned int run_multithreaded : 1;
   unsigned int run_distributed : 1;
   unsigned int run_shared : 1;
   unsigned int run_task_pool : 1;
   unsigned int verify : 1;
+  int omp_threads;
 } BenchmarkConfig;
 
 /**

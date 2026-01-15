@@ -7,7 +7,7 @@
 
 // CSV Header for the single-run data file
 const char *SINGLE_RUN_CSV_HEADER =
-    "Pixel Count,Kernel Size,Clusters,Threads,Time";
+    "Width * Height,Kernel Size,Clusters,Threads,Time";
 
 #define _DATA_FOLDER PROJECT_ROOT "../data/chrono"
 const char *SERIAL_CSV_FILE = _DATA_FOLDER "/serial_data.csv";
@@ -19,14 +19,14 @@ const char *TASK_POOL_CSV_FILE = _DATA_FOLDER "/task_pool_data.csv";
 // CSV Header for the multi-run data file
 const char *MULTI_RUN_CSV_FILE = _DATA_FOLDER "/time_data.csv";
 const char *MULTI_RUN_CSV_HEADER =
-    "Pixel Count,Kernel Size,Clusters,Threads,Serial "
+    "Width * Height,Kernel Size,Clusters,Threads,Serial "
     "Time,Multithreaded "
     "Time,Distributed Time,Shared Time,Task Pool Time";
 
 // CSV Header for the speedup data file
 const char *SPEEDUP_CSV_FILE = _DATA_FOLDER "/speedups_data.csv";
 const char *SPEEDUP_CSV_HEADER =
-    "Pixel Count,Kernel Size,Clusters,Threads,Serial "
+    "Width * Height,Kernel Size,Clusters,Threads,Serial "
     "Speedup,Multithreaded "
     "Speedup,Distributed Speedup,Shared Speedup,Task Pool Speedup";
 

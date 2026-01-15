@@ -42,7 +42,7 @@ app_error init_benchmark_csv(const char *filename, const char *header) {
   return SUCCESS;
 }
 
-app_error append_benchmark_result(const char *filename, int pixel_count,
+app_error append_benchmark_result(const char *filename, int width, int height,
                                   int kernel_size, int clusters, int threads,
                                   double serial_time, double multithreaded_time,
                                   double distributed_time, double shared_time,
@@ -53,7 +53,7 @@ app_error append_benchmark_result(const char *filename, int pixel_count,
     return ERR_FILE_OPEN;
   }
 
-  fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f\n", pixel_count,
+  fprintf(fp, "%d * %d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f\n", width, height,
           kernel_size, clusters, threads, serial_time, multithreaded_time,
           distributed_time, shared_time, task_pool_time);
 
@@ -61,17 +61,18 @@ app_error append_benchmark_result(const char *filename, int pixel_count,
   return SUCCESS;
 }
 
-app_error append_single_benchmark_result(const char *filename, int pixel_count,
-                                         int kernel_size, int clusters,
-                                         int threads, double time) {
+app_error append_single_benchmark_result(const char *filename, int width,
+                                         int height, int kernel_size,
+                                         int clusters, int threads,
+                                         double time) {
   FILE *fp = fopen(filename, "a");
   if (fp == NULL) {
     perror("Error opening CSV file for appending");
     return ERR_FILE_OPEN;
   }
 
-  fprintf(fp, "%d,%d,%d,%d,%.6f\n", pixel_count, kernel_size, clusters, threads,
-          time);
+  fprintf(fp, "%d * %d,%d,%d,%d,%.6f\n", width, height, kernel_size, clusters,
+          threads, time);
 
   fclose(fp);
   return SUCCESS;

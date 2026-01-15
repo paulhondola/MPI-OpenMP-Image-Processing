@@ -29,15 +29,16 @@ app_error init_benchmark_csv(const char *filename, const char *header);
  *         - SUCCESS: Result appended successfully
  *         - ERR_FILE_OPEN: Could not open file for appending
  */
-app_error append_benchmark_result(const char *filename, int pixel_count,
+app_error append_benchmark_result(const char *filename, int width, int height,
                                   int kernel_size, int clusters, int threads,
                                   double serial_time, double multithreaded_time,
                                   double distributed_time, double shared_time,
                                   double task_pool_time);
 
-app_error append_single_benchmark_result(const char *filename, int pixel_count,
-                                         int kernel_size, int clusters,
-                                         int threads, double time);
+app_error append_single_benchmark_result(const char *filename, int width,
+                                         int height, int kernel_size,
+                                         int clusters, int threads,
+                                         double time);
 
 /**
  * Recursively creates all directories specified in the given path.

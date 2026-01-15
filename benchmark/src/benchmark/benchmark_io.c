@@ -55,46 +55,46 @@ app_error log_kernel_results(int file_number, int kernel_number, int comm_size,
     task_pool_time = benchmark_data[4][file_number][kernel_number];
 
   if (run_all) {
+    int thread_count = config.omp_threads * comm_size;
     err = append_benchmark_result(
-        MULTI_RUN_CSV_FILE, width * height, CONV_KERNELS[kernel_number].size,
-        comm_size, config.omp_threads, serial_time, multithreaded_time,
+        MULTI_RUN_CSV_FILE, width, height, CONV_KERNELS[kernel_number].size,
+        comm_size, thread_count, serial_time, multithreaded_time,
         distributed_time, shared_time, task_pool_time);
     if (err != SUCCESS)
       return err;
   } else {
     if (config.run_serial) {
       err = append_single_benchmark_result(
-          SERIAL_CSV_FILE, width * height, CONV_KERNELS[kernel_number].size,
+          SERIAL_CSV_FILE, width, height, CONV_KERNELS[kernel_number].size,
           comm_size, config.omp_threads, serial_time);
       if (err != SUCCESS)
         return err;
     }
     if (config.run_multithreaded) {
       err = append_single_benchmark_result(
-          MULTITHREADED_CSV_FILE, width * height,
+          MULTITHREADED_CSV_FILE, width, height,
           CONV_KERNELS[kernel_number].size, comm_size, config.omp_threads,
           multithreaded_time);
       if (err != SUCCESS)
         return err;
     }
     if (config.run_distributed) {
-      err = append_single_benchmark_result(DISTRIBUTED_CSV_FILE, width * height,
-                                           CONV_KERNELS[kernel_number].size,
-                                           comm_size, config.omp_threads,
-                                           distributed_time);
+      err = append_single_benchmark_result(
+          DISTRIBUTED_CSV_FILE, width, height, CONV_KERNELS[kernel_number].size,
+          comm_size, config.omp_threads, distributed_time);
       if (err != SUCCESS)
         return err;
     }
     if (config.run_shared) {
       err = append_single_benchmark_result(
-          SHARED_CSV_FILE, width * height, CONV_KERNELS[kernel_number].size,
+          SHARED_CSV_FILE, width, height, CONV_KERNELS[kernel_number].size,
           comm_size, config.omp_threads, shared_time);
       if (err != SUCCESS)
         return err;
     }
     if (config.run_task_pool) {
       err = append_single_benchmark_result(
-          TASK_POOL_CSV_FILE, width * height, CONV_KERNELS[kernel_number].size,
+          TASK_POOL_CSV_FILE, width, height, CONV_KERNELS[kernel_number].size,
           comm_size, config.omp_threads, task_pool_time);
       if (err != SUCCESS)
         return err;
@@ -129,10 +129,12 @@ app_error log_speedup_results(int f, int k, int comm_size,
   if (task_pool_time > 0)
     task_pool_speedup = serial_time / task_pool_time;
 
+  int thread_count = config.omp_threads * comm_size;
+
   return append_benchmark_result(
-      SPEEDUP_CSV_FILE, width * height, CONV_KERNELS[k].size, comm_size,
-      config.omp_threads, serial_speedup, multithreaded_speedup,
-      distributed_speedup, shared_speedup, task_pool_speedup);
+      SPEEDUP_CSV_FILE, width, height, CONV_KERNELS[k].size, comm_size,
+      thread_count, serial_speedup, multithreaded_speedup, distributed_speedup,
+      shared_speedup, task_pool_speedup);
 }
 
 app_error write_benchmark_results(int comm_size, BenchmarkConfig config) {
