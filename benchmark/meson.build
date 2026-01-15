@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.5.0',
+  version : '1.6.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -84,7 +84,6 @@ run_target('run_sweep',
   depends : exe
 )
 
-# Clean Targets
 # Cleans all generated images except the 'base' directory
 run_target('clean_images',
   command : ['sh', meson.project_source_root() + '/scripts/clear_images.sh']
@@ -99,4 +98,3 @@ run_target('clean_data',
 run_target('kill',
   command : ['sh', meson.project_source_root() + '/scripts/kill_process.sh']
 )
-
