@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 
 # Set style
 sns.set_theme(style="whitegrid")
@@ -12,7 +13,24 @@ def plot_speedup_vs_size(df, output_dir):
     combinations = df[["Clusters", "Threads"]].drop_duplicates().values
 
     for cluster, thread in combinations:
+        # Skip Clusters=1 as requested (only multithreaded line)
+        if cluster == 1:
+            continue
+
         subset_base = df[(df["Clusters"] == cluster) & (df["Threads"] == thread)]
+
+        # Comparison Logic:
+        # If we are plotting a distributed run (Clusters > 1), we want to compare
+        # with the equivalent Multithreaded run (Clusters=1, Threads=Total Cores)
+        if cluster > 1:
+            total_cores = cluster * thread
+            multithreaded_subset = df[
+                (df["Implementation"] == "Multithreaded")
+                & (df["Clusters"] == 1)
+                & (df["Threads"] == total_cores)
+            ]
+            if not multithreaded_subset.empty:
+                subset_base = pd.concat([subset_base, multithreaded_subset])
 
         # Get unique kernel sizes for this configuration
         kernel_sizes = sorted(subset_base["Kernel Size"].unique())
@@ -53,44 +71,6 @@ def plot_speedup_vs_size(df, output_dir):
         filename = f"speedup_size_C{cluster}_T{thread}.png"
         plt.savefig(output_dir / filename)
         plt.close()
-
-
-def plot_strong_scaling_threads(df, output_dir):
-    """Speedup vs Threads (Strong Scaling within Node)"""
-    print("Plotting Speedup vs Threads...")
-    # Fix Clusters=1 for thread scaling usually
-    # We want to see how adding threads improves performance for a fixed image size and kernel
-
-    # Selecting a representative large image size for better scaling visibility
-    # Get max pixel count
-    max_pixels = df["Pixel Count"].max()
-
-    subset = df[(df["Pixel Count"] == max_pixels) & (df["Clusters"] == 1)]
-
-    if subset.empty:
-        return
-
-    # For thread scaling, we typically look at Multithreaded implementation
-    # But Distributed (on 1 cluster) should also scale similarly
-
-    plt.figure(figsize=(10, 6))
-    sns.lineplot(
-        data=subset,
-        x="Threads",
-        y="Speedup",
-        hue="Implementation",
-        style="Kernel Size",
-        markers=True,
-        dashes=False,
-    )
-    plt.title(
-        f"Strong Scaling: Speedup vs Threads\n(Image Size={max_pixels}, Clusters=1)"
-    )
-    plt.ylabel("Speedup")
-    plt.xlabel("Threads per Node")
-    plt.tight_layout()
-    plt.savefig(output_dir / "scaling_threads.png")
-    plt.close()
 
 
 def plot_strong_scaling_clusters(df, output_dir):
@@ -137,8 +117,6 @@ def plot_strong_scaling_clusters(df, output_dir):
 def plot_efficiency(df, output_dir):
     """Efficiency vs Cores"""
     print("Plotting Efficiency...")
-    # Calculate Total Cores = Clusters * Threads
-    # Efficiency = Speedup / Total Cores
 
     df_eff = df.copy()
     df_eff["Total Cores"] = df_eff["Clusters"] * df_eff["Threads"]
@@ -146,6 +124,9 @@ def plot_efficiency(df, output_dir):
 
     max_pixels = df_eff["Pixel Count"].max()
     subset = df_eff[df_eff["Pixel Count"] == max_pixels]
+
+    # Filter out single core
+    subset = subset[subset["Total Cores"] >= 2]
 
     plt.figure(figsize=(10, 6))
     sns.lineplot(
@@ -160,6 +141,7 @@ def plot_efficiency(df, output_dir):
     plt.title(f"Parallel Efficiency vs Total Cores\n(Image Size={max_pixels})")
     plt.ylabel("Efficiency (Speedup / Cores)")
     plt.xlabel("Total Cores")
+    plt.xlim(left=1.5)
     plt.ylim(0, 1.2)
     plt.tight_layout()
     plt.savefig(output_dir / "efficiency.png")

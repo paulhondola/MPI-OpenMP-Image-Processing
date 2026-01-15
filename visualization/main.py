@@ -1,9 +1,8 @@
 import argparse
 from pathlib import Path
-from src.data import load_data, preprocess_data
-from src.plots import (
+from data import load_data, preprocess_data
+from plots import (
     plot_speedup_vs_size,
-    plot_strong_scaling_threads,
     plot_strong_scaling_clusters,
     plot_efficiency,
 )
@@ -39,7 +38,7 @@ def main():
 
     # Generate Plots
     plot_speedup_vs_size(melted_df, output_dir)
-    plot_strong_scaling_threads(melted_df, output_dir)
+
     plot_strong_scaling_clusters(melted_df, output_dir)
     plot_efficiency(melted_df, output_dir)
 
