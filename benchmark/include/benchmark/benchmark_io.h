@@ -1,8 +1,8 @@
 #ifndef __BENCHMARK_IO_H__
 #define __BENCHMARK_IO_H__
 
-#include "benchmark/benchmark_run.h"
-#include "config/errors.h"
+#include "../config/errors.h"
+#include "benchmark_run.h"
 
 /**
  * @brief Writes the benchmark results to CSV file(s).

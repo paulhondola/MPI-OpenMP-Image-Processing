@@ -1,9 +1,9 @@
 #ifndef __KERNEL_RUN_H__
 #define __KERNEL_RUN_H__
 
-#include "config/errors.h"
-#include "config/files.h"
-#include "config/kernel.h"
+#include "../config/errors.h"
+#include "../config/files.h"
+#include "../config/kernel.h"
 #include "image/bmp_io.h"
 
 // Callback type for convolution functions

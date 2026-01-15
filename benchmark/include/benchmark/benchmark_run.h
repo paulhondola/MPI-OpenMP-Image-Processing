@@ -1,7 +1,7 @@
 #ifndef __BENCHMARK_RUN_H__
 #define __BENCHMARK_RUN_H__
 
-#include "config/errors.h"
+#include "../config/errors.h"
 
 typedef struct {
   unsigned int run_serial : 1;

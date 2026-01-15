@@ -1,9 +1,9 @@
 #ifndef __CONVOLUTION_H__
 #define __CONVOLUTION_H__
 
-#include "config/errors.h"
-#include "config/kernel.h"
-#include "image/bmp_io.h"
+#include "../config/errors.h"
+#include "../config/kernel.h"
+#include "bmp_io.h"
 
 /**
  * Applies a convolution kernel to an image.

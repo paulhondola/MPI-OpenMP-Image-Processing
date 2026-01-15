@@ -1,9 +1,9 @@
 #ifndef __VALIDATE_IMAGES_H__
 #define __VALIDATE_IMAGES_H__
 
-#include "benchmark/benchmark_run.h"
-#include "config/errors.h"
-#include "image/bmp_io.h"
+#include "../benchmark/benchmark_run.h"
+#include "../config/errors.h"
+#include "../image/bmp_io.h"
 #include <limits.h>
 
 app_error check_images_match(Image *img1, Image *img2);

@@ -1,7 +1,7 @@
 #ifndef __FILE_UTILS_H__
 #define __FILE_UTILS_H__
 
-#include "config/errors.h"
+#include "../config/errors.h"
 
 /**
  * Initializes the benchmark CSV file with headers if it doesn't exist.
