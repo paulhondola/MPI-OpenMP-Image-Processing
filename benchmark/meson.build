@@ -1,5 +1,5 @@
 project('MpiOmpImageProcessing', 'c',
-  version : '1.7.0',
+  version : '2.0.0',
   default_options : ['warning_level=3', 'c_std=c99', 'optimization=3'])
 
 cc = meson.get_compiler('c')
@@ -7,8 +7,8 @@ m_dep = cc.find_library('m', required : false)
 add_project_arguments('-march=native', '-DPROJECT_ROOT="' + meson.project_source_root() + '/"', language : 'c')
 
 # Configuration Variables
-mpi_processes = '2'
-omp_threads = '2'
+mpi_processes = '4'
+omp_threads = '4'
 
 # Dependencies
 omp_dep = dependency('openmp')

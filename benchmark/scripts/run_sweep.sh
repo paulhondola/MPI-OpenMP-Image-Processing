@@ -12,18 +12,20 @@ if [ -z "$MPIRUN" ] || [ -z "$EXE" ]; then
     exit 1
 fi
 
-CLUSTERS="2 4"
-THREADS="1 2"
+# list of "clusters:threads" configurations
+CONFIGS="2:1 2:2 2:4 4:1 4:2 8:1"
 
 echo "Starting Benchmark Sweep..."
 
-for c in $CLUSTERS; do
-    for t in $THREADS; do
-        echo "---------------------------------------------------"
-        echo "Configuration: Clusters=$c, Threads=$t"
-        echo "---------------------------------------------------"
-        "$MPIRUN" -n "$c" "$EXE" --threads "$t" --all
-    done
+for config in $CONFIGS; do
+    # Split the config string "c:t"
+    c=${config%:*}
+    t=${config#*:}
+    
+    echo "---------------------------------------------------"
+    echo "Configuration: Clusters=$c, Threads=$t"
+    echo "---------------------------------------------------"
+    "$MPIRUN" -n "$c" "$EXE" --threads "$t" --all
 done
 
 echo "Sweep Completed."
