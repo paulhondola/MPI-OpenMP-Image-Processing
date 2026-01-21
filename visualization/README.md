@@ -17,11 +17,11 @@ uv sync
 To generate performance plots from the speedup data:
 
 ```bash
-uv run plot.py
+uv run main.py
 ```
 
 Arguments:
-- `--data`: Path to the input CSV file (default: `../data/chronos/speedups_data.csv`)
+- `--data`: Path to the input CSV file (default: `../data/chrono/speedups_data.csv`)
 - `--output`: Directory to save the plots (default: `plots`)
 
 ## Available Plots

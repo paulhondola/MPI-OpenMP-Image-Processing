@@ -111,18 +111,18 @@ You can run the benchmark binary directly to control which modes are executed.
 ```bash
 # General syntax
 cd build
-./mpi_omp_convolution -threads <threads> [mode flags]
+./mpi_omp_convolution --threads <threads> [mode flags]
 ```
 
 **Flags:**
-*   `-threads <n>`      : Set number of OpenMP threads
-*   `-serial`           : Run Serial benchmark (required for verification)
-*   `-multithreaded`    : Run Parallel Multithreaded benchmark
-*   `-distributed`      : Run Parallel Distributed Filesystem benchmark
-*   `-shared`           : Run Parallel Shared Filesystem benchmark
-*   `-task_pool`        : Run Parallel Task Pool benchmark
-*   `-all`              : Run All benchmarks
-*   `--help`            : Show usage
+*   `--threads <n>`      : Set number of OpenMP threads
+*   `--serial`           : Run Serial benchmark (required for verification)
+*   `--multithreaded`    : Run Parallel Multithreaded benchmark
+*   `--distributed`      : Run Parallel Distributed Filesystem benchmark
+*   `--shared`           : Run Parallel Shared Filesystem benchmark
+*   `--task_pool`        : Run Parallel Task Pool benchmark
+*   `--all`              : Run All benchmarks
+*   `--help`             : Show usage
 
 **Examples:**
 
@@ -130,16 +130,16 @@ cd build
 cd build
 
 # Run Serial benchmark (generates reference images)
-mpi_omp_convolution -serial
+./mpi_omp_convolution --serial
 
 # Run Distributed benchmark with 4 MPI processes and 4 OpenMP threads per rank
-mpirun -n 4 mpi_omp_convolution -threads 4 -distributed
+mpirun -n 4 ./mpi_omp_convolution --threads 4 --distributed
 
 # Run All benchmarks
-mpirun -n 4 mpi_omp_convolution -threads 4 -all
+mpirun -n 4 ./mpi_omp_convolution --threads 4 --all
 ```
 
-> **Note:** The parallel modes verify their output against the serial output. You must run the Serial benchmark (`-serial`) at least once to generate the reference images, otherwise verification will fail.
+> **Note:** The parallel modes verify their output against the serial output. You must run the Serial benchmark (`--serial`) at least once to generate the reference images, otherwise verification will fail.
 
 ## Configuration
 
