@@ -13,7 +13,7 @@ int main(void) {
   int height = 1080;
   int kernel_size = 3;
   int clusters = 4;
-  int total_threads = 32; // 4 clusters * 8 threads
+  int threads = 2; // 4 clusters * 8 threads
   double serial = 10.0;
   double multi = 2.5;
   double dist = 1.0;
@@ -29,7 +29,7 @@ int main(void) {
   char expected_line[512];
   snprintf(
       expected_line, sizeof(expected_line),
-      "1920 * 1080,3,10.000000,8,2.500000,4,32,1.000000,1.200000,1.100000\n");
+      "1920 * 1080,3,10.000000,8,2.500000,4,2,1.000000,1.200000,1.100000\n");
 
   // Clean up previous run
   remove(TEST_FILE);
@@ -37,7 +37,7 @@ int main(void) {
   // Run Function
   app_error err =
       append_benchmark_result(TEST_FILE, width, height, kernel_size, clusters,
-                              total_threads, serial, multi, dist, shared, task);
+                              threads, serial, multi, dist, shared, task);
 
   if (err != SUCCESS) {
     fprintf(stderr, "Function failed with error code: %d\n", err);
