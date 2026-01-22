@@ -92,12 +92,11 @@ app_error convolve_parallel_multithreaded(Image *img, const char *img_name,
   int k_size = kernel.size;
   int half_k = k_size / 2;
 
-  Pixel *output = alloc_pixel(width, height);
+  Pixel *restrict output = alloc_pixel(width, height);
   if (!output) {
     return ERR_MEM_ALLOC;
   }
 
-  Pixel *restrict output_data = output;
   const Pixel *restrict input_data = img->data;
   const double *restrict kernel_data = kernel.data;
 
@@ -124,7 +123,7 @@ app_error convolve_parallel_multithreaded(Image *img, const char *img_name,
 
       Pixel out_p;
       clamp_pixel(&out_p, r_acc, g_acc, b_acc);
-      output_data[y * width + x] = out_p;
+      output[y * width + x] = out_p;
     }
   }
 
@@ -214,85 +213,86 @@ app_error convolve_parallel_distributed_filesystem(Image *img,
   MPI_Bcast(local_kernel_data, k_size * k_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
   // 2. Calculate Chunk Splits
-  int local_h, start_y;
-  get_chunk_metadata(height, rank, size, &start_y, &local_h);
+  int chunk_height, chunk_start_y;
+  get_chunk_metadata(height, rank, size, &chunk_start_y, &chunk_height);
 
   // Prepare Scatterv counts
-  int *sendcounts = NULL;
-  int *displs = NULL;
+  int *scatter_counts_bytes = NULL;
+  int *scatter_displs_bytes = NULL;
   if (rank == 0) {
-    sendcounts = malloc(size * sizeof(int));
-    displs = malloc(size * sizeof(int));
+    scatter_counts_bytes = malloc(size * sizeof(int));
+    scatter_displs_bytes = malloc(size * sizeof(int));
     int current_disp = 0;
     for (int r = 0; r < size; r++) {
-      int r_h, r_xy;
-      get_chunk_metadata(height, r, size, &r_xy, &r_h);
-      sendcounts[r] = r_h * width * sizeof(Pixel);
-      displs[r] = current_disp;
-      current_disp += sendcounts[r];
+      int rank_chunk_h, rank_start_y;
+      get_chunk_metadata(height, r, size, &rank_start_y, &rank_chunk_h);
+      scatter_counts_bytes[r] = rank_chunk_h * width * sizeof(Pixel);
+      scatter_displs_bytes[r] = current_disp;
+      current_disp += scatter_counts_bytes[r];
     }
   }
 
   // 3. Allocate Local Buffer (w/ Halo)
   int halo_size = k_size / 2;
-  int local_buffer_height = local_h + 2 * halo_size;
-  Pixel *local_data =
-      (Pixel *)malloc(local_buffer_height * width * sizeof(Pixel));
-  Pixel *local_output = (Pixel *)malloc(local_h * width * sizeof(Pixel));
+  int padded_buffer_height = chunk_height + 2 * halo_size;
+  Pixel *padded_input =
+      (Pixel *)malloc(padded_buffer_height * width * sizeof(Pixel));
+  Pixel *output_chunk = (Pixel *)malloc(chunk_height * width * sizeof(Pixel));
 
-  if (!local_data || !local_output) {
+  if (!padded_input || !output_chunk) {
     if (rank != 0)
       free(local_kernel_data);
     return ERR_MEM_ALLOC;
   }
 
-  // 4. Scatter Data (into the "middle" of local_data, skipping top halo)
-  Pixel *scatter_target = local_data + halo_size * width;
+  // 4. Scatter Data (into the "middle" of padded_input, skipping top halo)
+  Pixel *scatter_target = padded_input + halo_size * width;
   // Note: MPI_Scatterv sends bytes because we used sizeof(Pixel) in counts
-  MPI_Scatterv((rank == 0) ? img->data : NULL, sendcounts, displs, MPI_BYTE,
-               scatter_target, local_h * width * sizeof(Pixel), MPI_BYTE, 0,
+  MPI_Scatterv((rank == 0) ? img->data : NULL, scatter_counts_bytes,
+               scatter_displs_bytes, MPI_BYTE, scatter_target,
+               chunk_height * width * sizeof(Pixel), MPI_BYTE, 0,
                MPI_COMM_WORLD);
 
   if (rank == 0) {
-    free(sendcounts);
-    free(displs);
+    free(scatter_counts_bytes);
+    free(scatter_displs_bytes);
   }
 
   // 5. Fill Boundaries / Exchange Halos
-  exchange_halos(local_data, width, local_h, halo_size, rank, size);
+  exchange_halos(padded_input, width, chunk_height, halo_size, rank, size);
 
   // Manual clamp fill for global boundaries
   if (rank == 0) {
     // Fill top halo with first row
     for (int h = 0; h < halo_size; h++) {
-      memcpy(local_data + h * width, local_data + halo_size * width,
+      memcpy(padded_input + h * width, padded_input + halo_size * width,
              width * sizeof(Pixel));
     }
   }
   if (rank == size - 1) {
     // Fill bottom halo with last row
     for (int h = 0; h < halo_size; h++) {
-      memcpy(local_data + (local_h + halo_size + h) * width,
-             local_data + (local_h + halo_size - 1) * width,
+      memcpy(padded_input + (chunk_height + halo_size + h) * width,
+             padded_input + (chunk_height + halo_size - 1) * width,
              width * sizeof(Pixel));
     }
   }
 
   // 6. Compute Convolution (OpenMP)
-  int half_k = halo_size;
+  int kernel_radius = halo_size;
 
 #pragma omp parallel for collapse(2) schedule(static)
-  for (int y = 0; y < local_h; y++) {
+  for (int y = 0; y < chunk_height; y++) {
     for (int x = 0; x < width; x++) {
-      double r_acc = 0, g_acc = 0, b_acc = 0;
+      double sum_r = 0, sum_g = 0, sum_b = 0;
 
       for (int ky = 0; ky < k_size; ky++) {
         for (int kx = 0; kx < k_size; kx++) {
           // Local buffer coordinates:
           // Center row is 'y + halo_size'
-          // Neighbor row is 'y + halo_size + (ky - half_k)'
-          int py = y + halo_size + ky - half_k;
-          int px = x + kx - half_k;
+          // Neighbor row is 'y + halo_size + (ky - kernel_radius)'
+          int py = y + halo_size + ky - kernel_radius;
+          int px = x + kx - kernel_radius;
 
           // Clamp X coordinate
           if (px < 0)
@@ -300,50 +300,50 @@ app_error convolve_parallel_distributed_filesystem(Image *img,
           if (px >= width)
             px = width - 1;
 
-          Pixel p = local_data[py * width + px];
+          Pixel p = padded_input[py * width + px];
           double k_val = local_kernel_data[ky * k_size + kx];
 
-          r_acc += p.r * k_val;
-          g_acc += p.g * k_val;
-          b_acc += p.b * k_val;
+          sum_r += p.r * k_val;
+          sum_g += p.g * k_val;
+          sum_b += p.b * k_val;
         }
       }
 
       Pixel out_p;
-      clamp_pixel(&out_p, r_acc, g_acc, b_acc);
-      local_output[y * width + x] = out_p;
+      clamp_pixel(&out_p, sum_r, sum_g, sum_b);
+      output_chunk[y * width + x] = out_p;
     }
   }
 
   // 7. Gather Results
   // Re-calculate counts for Gatherv
-  int *recvcounts = NULL;
-  int *rdispls = NULL;
+  int *gather_counts_bytes = NULL;
+  int *gather_displs_bytes = NULL;
   if (rank == 0) {
-    recvcounts = malloc(size * sizeof(int));
-    rdispls = malloc(size * sizeof(int));
+    gather_counts_bytes = malloc(size * sizeof(int));
+    gather_displs_bytes = malloc(size * sizeof(int));
     int current_disp = 0;
     for (int r = 0; r < size; r++) {
-      int r_h, r_xy;
-      get_chunk_metadata(height, r, size, &r_xy, &r_h);
-      recvcounts[r] = r_h * width * sizeof(Pixel);
-      rdispls[r] = current_disp;
-      current_disp += recvcounts[r];
+      int rank_chunk_h, rank_start_y;
+      get_chunk_metadata(height, r, size, &rank_start_y, &rank_chunk_h);
+      gather_counts_bytes[r] = rank_chunk_h * width * sizeof(Pixel);
+      gather_displs_bytes[r] = current_disp;
+      current_disp += gather_counts_bytes[r];
     }
   }
 
-  MPI_Gatherv(local_output, local_h * width * sizeof(Pixel), MPI_BYTE,
-              (rank == 0) ? img->data : NULL, recvcounts, rdispls, MPI_BYTE, 0,
-              MPI_COMM_WORLD);
+  MPI_Gatherv(output_chunk, chunk_height * width * sizeof(Pixel), MPI_BYTE,
+              (rank == 0) ? img->data : NULL, gather_counts_bytes,
+              gather_displs_bytes, MPI_BYTE, 0, MPI_COMM_WORLD);
 
   // 8. Cleanup
-  free(local_data);
-  free(local_output);
+  free(padded_input);
+  free(output_chunk);
   if (rank != 0)
     free(local_kernel_data);
   if (rank == 0) {
-    free(recvcounts);
-    free(rdispls);
+    free(gather_counts_bytes);
+    free(gather_displs_bytes);
   }
 
   double end_time = MPI_Wtime();
