@@ -50,32 +50,32 @@ run_target('setup_project',
 )
 
 run_target('run_serial',
-  command : [exe, '--serial'],
+  command : [exe, '--serial', '--verify'],
   depends : exe
 )
 
 run_target('run_multithreaded',
-  command : [exe, '--threads', omp_threads, '--multithreaded'],
+  command : [exe, '--threads', omp_threads, '--multithreaded', '--verify'],
   depends : exe
 )
 
 run_target('run_distributed',
-  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--distributed'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--distributed', '--verify'],
   depends : exe
 )
 
 run_target('run_shared',
-  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--shared'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--shared', '--verify'],
   depends : exe
 )
 
 run_target('run_task_pool',
-  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--task_pool'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--task_pool', '--verify'],
   depends : exe
 )
 
 run_target('run_all',
-  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--all'],
+  command : [mpirun, '-n', mpi_processes, exe, '--threads', omp_threads, '--all', '--verify'],
   depends : exe
 )
 
