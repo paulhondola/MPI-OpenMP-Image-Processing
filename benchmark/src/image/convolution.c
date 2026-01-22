@@ -218,17 +218,17 @@ app_error convolve_parallel_distributed_filesystem(Image *img,
 
   // Prepare Scatterv counts
   int *scatter_counts_bytes = NULL;
-  int *scatter_displs_bytes = NULL;
+  int *scatter_offset_bytes = NULL;
   if (rank == 0) {
     scatter_counts_bytes = malloc(size * sizeof(int));
-    scatter_displs_bytes = malloc(size * sizeof(int));
-    int current_disp = 0;
+    scatter_offset_bytes = malloc(size * sizeof(int));
+    int current_offset = 0;
     for (int r = 0; r < size; r++) {
       int rank_chunk_h, rank_start_y;
       get_chunk_metadata(height, r, size, &rank_start_y, &rank_chunk_h);
       scatter_counts_bytes[r] = rank_chunk_h * width * sizeof(Pixel);
-      scatter_displs_bytes[r] = current_disp;
-      current_disp += scatter_counts_bytes[r];
+      scatter_offset_bytes[r] = current_offset;
+      current_offset += scatter_counts_bytes[r];
     }
   }
 
@@ -249,13 +249,13 @@ app_error convolve_parallel_distributed_filesystem(Image *img,
   Pixel *scatter_target = padded_input + halo_size * width;
   // Note: MPI_Scatterv sends bytes because we used sizeof(Pixel) in counts
   MPI_Scatterv((rank == 0) ? img->data : NULL, scatter_counts_bytes,
-               scatter_displs_bytes, MPI_BYTE, scatter_target,
+               scatter_offset_bytes, MPI_BYTE, scatter_target,
                chunk_height * width * sizeof(Pixel), MPI_BYTE, 0,
                MPI_COMM_WORLD);
 
   if (rank == 0) {
     free(scatter_counts_bytes);
-    free(scatter_displs_bytes);
+    free(scatter_offset_bytes);
   }
 
   // 5. Fill Boundaries / Exchange Halos
@@ -318,23 +318,23 @@ app_error convolve_parallel_distributed_filesystem(Image *img,
   // 7. Gather Results
   // Re-calculate counts for Gatherv
   int *gather_counts_bytes = NULL;
-  int *gather_displs_bytes = NULL;
+  int *gather_offset_bytes = NULL;
   if (rank == 0) {
     gather_counts_bytes = malloc(size * sizeof(int));
-    gather_displs_bytes = malloc(size * sizeof(int));
-    int current_disp = 0;
+    gather_offset_bytes = malloc(size * sizeof(int));
+    int current_offset = 0;
     for (int r = 0; r < size; r++) {
       int rank_chunk_h, rank_start_y;
       get_chunk_metadata(height, r, size, &rank_start_y, &rank_chunk_h);
       gather_counts_bytes[r] = rank_chunk_h * width * sizeof(Pixel);
-      gather_displs_bytes[r] = current_disp;
-      current_disp += gather_counts_bytes[r];
+      gather_offset_bytes[r] = current_offset;
+      current_offset += gather_counts_bytes[r];
     }
   }
 
   MPI_Gatherv(output_chunk, chunk_height * width * sizeof(Pixel), MPI_BYTE,
               (rank == 0) ? img->data : NULL, gather_counts_bytes,
-              gather_displs_bytes, MPI_BYTE, 0, MPI_COMM_WORLD);
+              gather_offset_bytes, MPI_BYTE, 0, MPI_COMM_WORLD);
 
   // 8. Cleanup
   free(padded_input);
@@ -343,7 +343,7 @@ app_error convolve_parallel_distributed_filesystem(Image *img,
     free(local_kernel_data);
   if (rank == 0) {
     free(gather_counts_bytes);
-    free(gather_displs_bytes);
+    free(gather_offset_bytes);
   }
 
   double end_time = MPI_Wtime();
