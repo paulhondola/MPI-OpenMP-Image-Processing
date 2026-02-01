@@ -115,12 +115,9 @@ def plot_speedup_vs_size(df: pd.DataFrame, output_dir: Path) -> None:
         _plot_speedup_by_kernel_size(subset, cluster, thread, output_dir)
 
 
-def _prepare_efficiency_data(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+def _prepare_efficiency_data(df: pd.DataFrame) -> pd.DataFrame:
     """Prepares the melted dataframe for efficiency plotting."""
-
-    # Filter for max image size
-    max_pixels = df["Pixel Count"].max()
-    subset = df[df["Pixel Count"] == max_pixels].copy()
+    subset = df.copy()
 
     # Calculate Total Cores for the row (Clusters * Threads per process)
     subset["Total Cores"] = subset["Clusters"] * subset[_get_dist_threads_col(df)]
@@ -129,13 +126,13 @@ def _prepare_efficiency_data(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     subset = subset[subset["Total Cores"] >= 2]
 
     if subset.empty:
-        return pd.DataFrame(), max_pixels
+        return pd.DataFrame()
 
     # Melt logic to get Efficiency for each implementation
     value_vars = [c for c in df.columns if "Speedup" in c and "Serial" not in c]
 
     melted_eff = subset.melt(
-        id_vars=["Total Cores", "Kernel Size"],
+        id_vars=["Total Cores", "Kernel Size", "Pixel Count"],
         value_vars=value_vars,
         var_name="Implementation",
         value_name="Speedup",
@@ -146,29 +143,49 @@ def _prepare_efficiency_data(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     )
     melted_eff["Efficiency"] = melted_eff["Speedup"] / melted_eff["Total Cores"]
 
-    return melted_eff, max_pixels
+    return melted_eff
 
 
-def _draw_efficiency_plot(
-    melted_eff: pd.DataFrame, max_pixels: int, output_dir: Path
-) -> None:
-    """Draws and saves the efficiency plot."""
-    plt.figure(figsize=(10, 6))
-    sns.lineplot(
-        data=melted_eff,
-        x="Total Cores",
-        y="Efficiency",
-        hue="Implementation",
-        style="Kernel Size",
-        markers=True,
+def _draw_efficiency_plot(melted_eff: pd.DataFrame, output_dir: Path) -> None:
+    """Draws and saves the efficiency plots for each image size."""
+    pixel_counts = sorted(melted_eff["Pixel Count"].unique())
+
+    if not pixel_counts:
+        return
+
+    # Create subplots - one for each image size
+    fig, axes = plt.subplots(
+        1, len(pixel_counts), figsize=(6 * len(pixel_counts), 6), sharey=True
     )
-    plt.axhline(1.0, color="r", linestyle="--", label="Ideal")
-    plt.legend(loc="upper right")
-    plt.title(f"Parallel Efficiency vs Total Cores\n(Image Size={max_pixels})")
-    plt.ylabel("Efficiency (Speedup / Cores)")
-    plt.xlabel("Total Cores")
-    plt.xlim(left=1.5)
-    plt.ylim(0, 1.2)
+
+    # Ensure axes is iterable if there's only one pixel count
+    if len(pixel_counts) == 1:
+        axes = [axes]
+
+    for ax, pixels in zip(axes, pixel_counts):
+        subset = melted_eff[melted_eff["Pixel Count"] == pixels]
+
+        sns.lineplot(
+            data=subset,
+            x="Total Cores",
+            y="Efficiency",
+            hue="Implementation",
+            style="Kernel Size",
+            markers=True,
+            ax=ax,
+        )
+        ax.axhline(1.0, color="r", linestyle="--", label="Ideal")
+        ax.legend(loc="upper right")
+        ax.set_title(f"Image Size = {pixels}")
+        ax.set_xlabel("Total Cores")
+        ax.set_xlim(left=1.5)
+        ax.set_ylim(0, 1.2)
+        ax.grid(True)
+
+    # Set y-label only on the first subplot
+    axes[0].set_ylabel("Efficiency (Speedup / Cores)")
+
+    plt.suptitle("Parallel Efficiency vs Total Cores")
     plt.tight_layout()
     plt.savefig(output_dir / "efficiency.png")
     plt.close()
@@ -182,10 +199,10 @@ def plot_efficiency(df: pd.DataFrame, output_dir: Path) -> None:
         print("Error: 'Clusters' column missing for efficiency calculation.")
         return
 
-    melted_eff, max_pixels = _prepare_efficiency_data(df)
+    melted_eff = _prepare_efficiency_data(df)
 
     if melted_eff.empty:
         print("No parallel configurations found for efficiency plot.")
         return
 
-    _draw_efficiency_plot(melted_eff, max_pixels, output_dir)
+    _draw_efficiency_plot(melted_eff, output_dir)
