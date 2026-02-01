@@ -1,136 +1,172 @@
+# ABOUTME: This module provides functions for visualizing performance metrics such as speedup and efficiency.
+# ABOUTME: It generates plots using seaborn and matplotlib based on benchmark data processed by data.py.
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from pathlib import Path
 
 # Set style
 sns.set_theme(style="whitegrid")
 
 
-def plot_speedup_vs_size(df, output_dir):
-    """Speedup vs Image Size (Pixel Count) for specific configurations"""
-    print("Plotting Speedup vs Image Size...")
-    # Group by Cluster and Threads, disregarding Kernel Size for the loop
-    combinations = df[["Clusters", "Threads"]].drop_duplicates().values
-
-    for cluster, thread in combinations:
-        # Skip Clusters=1 as requested (only multithreaded line)
-        if cluster == 1:
-            continue
-
-        subset_base = df[(df["Clusters"] == cluster) & (df["Threads"] == thread)]
-
-        # Comparison Logic:
-        # If we are plotting a distributed run (Clusters > 1), we want to compare
-        # with the equivalent Multithreaded run (Clusters=1, Threads=Total Cores)
-        if cluster > 1:
-            total_cores = cluster * thread
-            multithreaded_subset = df[
-                (df["Implementation"] == "Multithreaded")
-                & (df["Clusters"] == 1)
-                & (df["Threads"] == total_cores)
-            ]
-            if not multithreaded_subset.empty:
-                subset_base = pd.concat([subset_base, multithreaded_subset])
-
-        # Get unique kernel sizes for this configuration
-        kernel_sizes = sorted(subset_base["Kernel Size"].unique())
-
-        if len(kernel_sizes) == 0:
-            continue
-
-        # Create subplots
-        fig, axes = plt.subplots(1, len(kernel_sizes), figsize=(12, 6), sharey=True)
-
-        # Ensure axes is iterable if there's only one kernel size
-        if len(kernel_sizes) == 1:
-            axes = [axes]
-
-        for ax, k_size in zip(axes, kernel_sizes):
-            subset = subset_base[subset_base["Kernel Size"] == k_size]
-
-            sns.lineplot(
-                data=subset,
-                x="Pixel Count",
-                y="Speedup",
-                hue="Implementation",
-                marker="o",
-                ax=ax,
-            )
-
-            ax.set_title(f"Kernel Size = {k_size}")
-            ax.set_xscale("log")  # Image sizes often spans orders of magnitude
-            ax.set_xlabel("Pixel Count")
-            ax.grid(True)
-
-        # Set shared y-label on the first subplot
-        axes[0].set_ylabel("Speedup (vs Serial)")
-
-        plt.suptitle(f"Speedup vs Image Size\n(Clusters={cluster}, Threads={thread})")
-        plt.tight_layout()
-
-        filename = f"speedup_size_C{cluster}_T{thread}.png"
-        plt.savefig(output_dir / filename)
-        plt.close()
+def _get_dist_threads_col(df: pd.DataFrame) -> str:
+    """Identify the column name for distributed threads."""
+    return "Threads.1" if "Threads.1" in df.columns else "Threads"
 
 
-def plot_strong_scaling_clusters(df, output_dir):
-    """Speedup vs Clusters (Strong Scaling across Nodes)"""
-    print("Plotting Speedup vs Clusters...")
-
-    max_pixels = df["Pixel Count"].max()
-    # Fix Threads to something constant, e.g., max threads or 1
-    # Let's pick the max threads available in data
-    max_threads = df["Threads"].max()
-
-    subset = df[
-        (df["Pixel Count"] == max_pixels)
-        & (df["Threads"] == max_threads)
-        & (
-            df["Implementation"] == "Distributed"
-        )  # Only Distributed scales with clusters
+def _plot_single_speedup_line(ax: plt.Axes, sub_k: pd.DataFrame, k_size: int) -> None:
+    """Helper to melt data and plot speedup lines on a single axes."""
+    # Melt for plotting multiple lines from the same row
+    value_vars = [
+        "Distributed Speedup",
+        "Multithreaded Speedup",
+        "Shared Speedup",
+        "Task Pool Speedup",
     ]
+    # Only include columns that actually exist
+    value_vars = [c for c in value_vars if c in sub_k.columns]
 
-    if subset.empty:
+    melted_sub = sub_k.melt(
+        id_vars=["Pixel Count"],
+        value_vars=value_vars,
+        var_name="Implementation",
+        value_name="Speedup",
+    )
+
+    # Clean up implementation names (remove " Speedup")
+    melted_sub["Implementation"] = melted_sub["Implementation"].str.replace(
+        " Speedup", ""
+    )
+
+    sns.lineplot(
+        data=melted_sub,
+        x="Pixel Count",
+        y="Speedup",
+        hue="Implementation",
+        marker="o",
+        ax=ax,
+    )
+
+    ax.set_title(f"Kernel Size = {k_size}")
+    ax.set_xscale("log")
+    ax.set_xlabel("Pixel Count")
+    ax.grid(True)
+
+
+def _plot_config_speedup(
+    subset: pd.DataFrame, cluster: int, thread: int, output_dir: Path
+) -> None:
+    """Generates and saves the speedup plot for a specific cluster/thread configuration."""
+    # Get unique kernel sizes for this configuration
+    kernel_sizes = sorted(subset["Kernel Size"].unique())
+
+    if len(kernel_sizes) == 0:
         return
 
-    plt.figure(figsize=(10, 6))
-    sns.lineplot(
-        data=subset,
-        x="Clusters",
-        y="Speedup",
-        hue="Kernel Size",
-        marker="o",
-        palette="viridis",
+    # Create subplots
+    fig, axes = plt.subplots(1, len(kernel_sizes), figsize=(12, 6), sharey=True)
+
+    # Ensure axes is iterable if there's only one kernel size
+    if len(kernel_sizes) == 1:
+        axes = [axes]
+
+    for ax, k_size in zip(axes, kernel_sizes):
+        sub_k = subset[subset["Kernel Size"] == k_size]
+        _plot_single_speedup_line(ax, sub_k, k_size)
+
+    # Set shared y-label on the first subplot
+    axes[0].set_ylabel("Speedup (vs Serial)")
+
+    plt.suptitle(
+        f"Speedup vs Image Size\n(Clusters={cluster}, Distributed Threads={thread})"
     )
-    plt.title(
-        f"Strong Scaling: Speedup vs Clusters\n(Image Size={max_pixels}, Threads={max_threads})"
-    )
-    plt.ylabel("Speedup")
-    plt.xlabel("Number of Clusters (Nodes)")
-    # Force integer ticks for clusters
-    plt.xticks(sorted(subset["Clusters"].unique()))
     plt.tight_layout()
-    plt.savefig(output_dir / "scaling_clusters.png")
+
+    filename = f"speedup_size_C{cluster}_T{thread}.png"
+    plt.savefig(output_dir / filename)
     plt.close()
 
 
-def plot_efficiency(df, output_dir):
-    """Efficiency vs Cores"""
-    print("Plotting Efficiency...")
+def plot_speedup_vs_size(df: pd.DataFrame, output_dir: Path) -> None:
+    """Speedup vs Image Size (Pixel Count) for specific configurations"""
+    print("Plotting Speedup vs Image Size...")
 
-    df_eff = df.copy()
-    df_eff["Total Cores"] = df_eff["Clusters"] * df_eff["Threads"]
-    df_eff["Efficiency"] = df_eff["Speedup"] / df_eff["Total Cores"]
+    if "Clusters" not in df.columns:
+        print("Error: 'Clusters' column not found in data.")
+        return
 
-    max_pixels = df_eff["Pixel Count"].max()
-    subset = df_eff[df_eff["Pixel Count"] == max_pixels]
+    dist_threads_col = _get_dist_threads_col(df)
+
+    # Filter for distributed configurations (Clusters > 1)
+    distributed_df = df[df["Clusters"] > 1].copy()
+
+    if distributed_df.empty:
+        print("No distributed configurations found.")
+        return
+
+    # Get unique combinations of Clusters and Distributed Threads
+    combinations = (
+        distributed_df[["Clusters", dist_threads_col]].drop_duplicates().values
+    )
+
+    for cluster, thread in combinations:
+        # Filter for this specific configuration
+        subset = distributed_df[
+            (distributed_df["Clusters"] == cluster)
+            & (distributed_df[dist_threads_col] == thread)
+        ]
+        _plot_config_speedup(subset, cluster, thread, output_dir)
+
+
+def _prepare_efficiency_data(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """Prepares the melted dataframe for efficiency plotting."""
+    dist_threads_col = _get_dist_threads_col(df)
+
+    # Filter for max image size
+    max_pixels = df["Pixel Count"].max()
+    subset = df[df["Pixel Count"] == max_pixels].copy()
+
+    # Calculate Total Cores for the row (Clusters * Threads per process)
+    subset["Total Cores"] = subset["Clusters"] * subset[dist_threads_col]
 
     # Filter out single core
     subset = subset[subset["Total Cores"] >= 2]
 
+    if subset.empty:
+        return pd.DataFrame(), max_pixels
+
+    # Melt logic to get Efficiency for each implementation
+    value_vars = [
+        "Distributed Speedup",
+        "Multithreaded Speedup",
+        "Shared Speedup",
+        "Task Pool Speedup",
+    ]
+    value_vars = [c for c in value_vars if c in subset.columns]
+
+    melted_eff = subset.melt(
+        id_vars=["Total Cores", "Kernel Size"],
+        value_vars=value_vars,
+        var_name="Implementation",
+        value_name="Speedup",
+    )
+
+    melted_eff["Implementation"] = melted_eff["Implementation"].str.replace(
+        " Speedup", ""
+    )
+    melted_eff["Efficiency"] = melted_eff["Speedup"] / melted_eff["Total Cores"]
+
+    return melted_eff, max_pixels
+
+
+def _draw_efficiency_plot(
+    melted_eff: pd.DataFrame, max_pixels: int, output_dir: Path
+) -> None:
+    """Draws and saves the efficiency plot."""
     plt.figure(figsize=(10, 6))
     sns.lineplot(
-        data=subset,
+        data=melted_eff,
         x="Total Cores",
         y="Efficiency",
         hue="Implementation",
@@ -146,3 +182,20 @@ def plot_efficiency(df, output_dir):
     plt.tight_layout()
     plt.savefig(output_dir / "efficiency.png")
     plt.close()
+
+
+def plot_efficiency(df: pd.DataFrame, output_dir: Path) -> None:
+    """Efficiency vs Cores"""
+    print("Plotting Efficiency...")
+
+    if "Clusters" not in df.columns:
+        print("Error: 'Clusters' column missing for efficiency calculation.")
+        return
+
+    melted_eff, max_pixels = _prepare_efficiency_data(df)
+
+    if melted_eff.empty:
+        print("No parallel configurations found for efficiency plot.")
+        return
+
+    _draw_efficiency_plot(melted_eff, max_pixels, output_dir)

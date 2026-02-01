@@ -1,14 +1,13 @@
 import argparse
 from pathlib import Path
-from data import load_data, preprocess_data
+from data import load_data, clean_raw_data
 from plots import (
     plot_speedup_vs_size,
-    plot_strong_scaling_clusters,
     plot_efficiency,
 )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate performance plots.")
     parser.add_argument(
         "--data",
@@ -34,13 +33,11 @@ def main():
     df = load_data(data_path)
 
     print("Preprocessing data...")
-    melted_df = preprocess_data(df)
+    clean_df = clean_raw_data(df)
 
     # Generate Plots
-    plot_speedup_vs_size(melted_df, output_dir)
-
-    plot_strong_scaling_clusters(melted_df, output_dir)
-    plot_efficiency(melted_df, output_dir)
+    plot_speedup_vs_size(clean_df, output_dir)
+    plot_efficiency(clean_df, output_dir)
 
     print(f"Done! Plots saved to {output_dir.resolve()}")
 
