@@ -21,6 +21,7 @@ uv run main.py
 ```
 
 Arguments:
+
 - `--data`: Path to the input CSV file (default: `../data/chrono/speedups_data.csv`)
 - `--output`: Directory to save the plots (default: `plots`)
 
@@ -31,6 +32,4 @@ The script generates the following types of plots in the output directory:
 | specific configuration | Plot Type             | Description                                  |
 | ---------------------- | --------------------- | -------------------------------------------- |
 | `speedup_size_*.png`   | Speedup vs Image Size | Performance scaling with increasing workload |
-| `scaling_threads.png`  | Speedup vs Threads    | Strong scaling within a single node (OpenMP) |
-| `scaling_clusters.png` | Speedup vs Clusters   | Strong scaling across nodes (MPI)            |
 | `efficiency.png`       | Parallel Efficiency   | Speedup per core vs Total Cores              |

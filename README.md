@@ -18,6 +18,7 @@ The primary goal of this project is to demonstrate and benchmark high-performanc
 Convolution is a mathematical operation fundamental to many image processing techniques. It involves sliding a small matrix (the kernel) over the image pixels to calculate new pixel values based on their neighbors. This operation is computationally intensive and highly parallelizable, making it an excellent candidate for performance optimization studies.
 
 This project implements several standard kernels:
+
 *   **Ridge Detection**: Highlights significant changes in intensity.
 *   **Edge Detection**: Identifies boundaries within the image.
 *   **Sharpen**: Enhances the contrast of edges.
@@ -34,7 +35,7 @@ This project implements several standard kernels:
 
 ## Project Structure
 
-```
+```md
 ├── images          # Input and output directory for BMP images
 │   ├── base        # Place input BMP files here
 │   └── [kernel]    # Output directories (automatically created)
@@ -141,6 +142,7 @@ You can run the benchmark binary directly to control which modes are executed.
 ```
 
 **Flags:**
+
 *   `--threads <n>`      : Set number of OpenMP threads
 *   `--serial`           : Run Serial benchmark (required for verification)
 *   `--multithreaded`    : Run Parallel Multithreaded benchmark
@@ -171,12 +173,15 @@ mpirun -n 4 build/mpi_omp_convolution --threads 4 --all
 You can configure the optimization flags and the number of processes/threads directly in `meson.build`.
 
 ### Optimization Flags
+
 The project is configured with aggressive optimization by default:
+
 ```meson
 add_project_arguments('-O3', '-march=native', language : 'c')
 ```
 
 ### Process & Thread Counts
+
 To change the number of MPI processes or OpenMP threads used by the run targets, edit the variables at the top of `meson.build`:
 
 ```meson
@@ -221,6 +226,7 @@ uv run main.py --data ../data/chrono/speedups_data.csv --output ../data/plots
 ```
 
 **Arguments:**
+
 - `--data`: Path to the input CSV file (default: `../data/chrono/speedups_data.csv`)
 - `--output`: Directory to save the plots (default: `../data/plots`)
 
@@ -231,8 +237,6 @@ The script generates the following types of plots in the output directory:
 | specific configuration | Plot Type             | Description                                  |
 | ---------------------- | --------------------- | -------------------------------------------- |
 | `speedup_size_*.png`   | Speedup vs Image Size | Performance scaling with increasing workload |
-| `scaling_threads.png`  | Speedup vs Threads    | Strong scaling within a single node (OpenMP) |
-| `scaling_clusters.png` | Speedup vs Clusters   | Strong scaling across nodes (MPI)            |
 | `efficiency.png`       | Parallel Efficiency   | Speedup per core vs Total Cores              |
 
 ## Cleaning
@@ -244,6 +248,7 @@ meson compile --clean -C build
 ```
 
 Or simply remove the build directory and re-setup if you want a fresh start:
+
 ```bash
 rm -rf build
 meson setup build
