@@ -4,7 +4,7 @@ project('MpiOmpImageProcessing', 'c',
 
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
-add_project_arguments('-march=native', '-DPROJECT_ROOT="' + meson.project_source_root() + '/"', language : 'c')
+add_project_arguments('-ffast-math', '-march=native', '-DPROJECT_ROOT="' + meson.project_source_root() + '/"', language : 'c')
 
 # Configuration Variables
 mpi_processes = '4'
