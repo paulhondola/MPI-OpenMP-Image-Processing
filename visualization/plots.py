@@ -1,6 +1,3 @@
-# ABOUTME: This module provides functions for visualizing performance metrics such as speedup and efficiency.
-# ABOUTME: It generates plots using seaborn and matplotlib based on benchmark data processed by data.py.
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -15,50 +12,43 @@ def _get_dist_threads_col(df: pd.DataFrame) -> str:
     return "Threads.1" if "Threads.1" in df.columns else "Threads"
 
 
-def _plot_single_speedup_line(ax: plt.Axes, sub_k: pd.DataFrame, k_size: int) -> None:
-    """Helper to melt data and plot speedup lines on a single axes."""
-    # Melt for plotting multiple lines from the same row
-    value_vars = [
-        "Distributed Speedup",
-        "Multithreaded Speedup",
-        "Shared Speedup",
-        "Task Pool Speedup",
-    ]
-    # Only include columns that actually exist
-    value_vars = [c for c in value_vars if c in sub_k.columns]
+def _melt_speedup_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Melts the dataframe to long format for speedup plotting."""
+    value_vars = [c for c in df.columns if "Speedup" in c]
 
-    melted_sub = sub_k.melt(
+    melted = df.melt(
         id_vars=["Pixel Count"],
         value_vars=value_vars,
         var_name="Implementation",
         value_name="Speedup",
     )
 
-    # Clean up implementation names (remove " Speedup")
-    melted_sub["Implementation"] = melted_sub["Implementation"].str.replace(
-        " Speedup", ""
-    )
+    melted["Implementation"] = melted["Implementation"].str.replace(" Speedup", "")
+    return melted
 
+
+def _draw_speedup_graph(ax: plt.Axes, melted_df: pd.DataFrame, k_size: int) -> None:
+    """Plots lines on a specific axes using pre-melted data."""
     sns.lineplot(
-        data=melted_sub,
+        data=melted_df,
         x="Pixel Count",
         y="Speedup",
         hue="Implementation",
         marker="o",
         ax=ax,
     )
-
+    ax.legend(loc="upper left")
     ax.set_title(f"Kernel Size = {k_size}")
     ax.set_xscale("log")
     ax.set_xlabel("Pixel Count")
     ax.grid(True)
 
 
-def _plot_config_speedup(
+def _plot_speedup_by_kernel_size(
     subset: pd.DataFrame, cluster: int, thread: int, output_dir: Path
 ) -> None:
     """Generates and saves the speedup plot for a specific cluster/thread configuration."""
-    # Get unique kernel sizes for this configuration
+    # We expect Kernel Size 3 and 5 typically
     kernel_sizes = sorted(subset["Kernel Size"].unique())
 
     if len(kernel_sizes) == 0:
@@ -72,8 +62,14 @@ def _plot_config_speedup(
         axes = [axes]
 
     for ax, k_size in zip(axes, kernel_sizes):
-        sub_k = subset[subset["Kernel Size"] == k_size]
-        _plot_single_speedup_line(ax, sub_k, k_size)
+        # 1. Filter by kernel size
+        sub_k = subset[subset["Kernel Size"] == k_size].copy()
+
+        # 2. Melt / Aggregate
+        melted_data = _melt_speedup_data(sub_k)
+
+        # 3. Plot
+        _draw_speedup_graph(ax, melted_data, k_size)
 
     # Set shared y-label on the first subplot
     axes[0].set_ylabel("Speedup (vs Serial)")
@@ -116,19 +112,18 @@ def plot_speedup_vs_size(df: pd.DataFrame, output_dir: Path) -> None:
             (distributed_df["Clusters"] == cluster)
             & (distributed_df[dist_threads_col] == thread)
         ]
-        _plot_config_speedup(subset, cluster, thread, output_dir)
+        _plot_speedup_by_kernel_size(subset, cluster, thread, output_dir)
 
 
 def _prepare_efficiency_data(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     """Prepares the melted dataframe for efficiency plotting."""
-    dist_threads_col = _get_dist_threads_col(df)
 
     # Filter for max image size
     max_pixels = df["Pixel Count"].max()
     subset = df[df["Pixel Count"] == max_pixels].copy()
 
     # Calculate Total Cores for the row (Clusters * Threads per process)
-    subset["Total Cores"] = subset["Clusters"] * subset[dist_threads_col]
+    subset["Total Cores"] = subset["Clusters"] * subset[_get_dist_threads_col(df)]
 
     # Filter out single core
     subset = subset[subset["Total Cores"] >= 2]
@@ -137,13 +132,7 @@ def _prepare_efficiency_data(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
         return pd.DataFrame(), max_pixels
 
     # Melt logic to get Efficiency for each implementation
-    value_vars = [
-        "Distributed Speedup",
-        "Multithreaded Speedup",
-        "Shared Speedup",
-        "Task Pool Speedup",
-    ]
-    value_vars = [c for c in value_vars if c in subset.columns]
+    value_vars = [c for c in df.columns if "Speedup" in c and "Serial" not in c]
 
     melted_eff = subset.melt(
         id_vars=["Total Cores", "Kernel Size"],
@@ -174,6 +163,7 @@ def _draw_efficiency_plot(
         markers=True,
     )
     plt.axhline(1.0, color="r", linestyle="--", label="Ideal")
+    plt.legend(loc="upper right")
     plt.title(f"Parallel Efficiency vs Total Cores\n(Image Size={max_pixels})")
     plt.ylabel("Efficiency (Speedup / Cores)")
     plt.xlabel("Total Cores")
